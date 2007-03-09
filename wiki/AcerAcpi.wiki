@@ -25,7 +25,7 @@ aceracpi creates entries under {{{/proc/acpi/acer}}}, which enable you to contro
 
 Where {feature} is either {{{wireless}}}, {{{bluetooth}}}, or {{{mailled}}}.
 
-= What aceracpi _doesn't_ do =
+= What aceracpi *doesn't* do =
 
 Olaf Tauber's acerhk was developed to also allow access to extra keys on Acer laptops. acer_acpi doesn't do this. Yet. Many of the extra keys already emit scancodes on a 2.6 series kernel. I thoroughly recommend use of a late version of Ubuntu or Fedora Core, which seem to handle nearly all the keys 'out of the box'.
 
@@ -57,7 +57,7 @@ modprobe acer_acpi
 
   * Assuming your kernel is still running(!), check out {{{dmesg}}} to see if the driver installed correctly, then check the {{{/proc/acpi/acer}}} directory to see if the control files are there.
 
-You may also want to check out the [http://code.google.com/p/aceracpi/w/FAQ frequently asked questions (FAQ)].
+You may also want to check out the [http://code.google.com/p/aceracpi/wiki/FAQ frequently asked questions (FAQ)].
 
 Previous versions are archived on the site, in case I've introduced any regressions.
 
