@@ -1,0 +1,48 @@
+#summary acer_acpi Frequently Asked Questions.
+#labels Featured
+
+= FAQ =
+
+==1. What is aceracpi?==
+
+Jump to the [http://code.google.com/p/aceracpi/ main page] to find out.
+
+==2. What hardware is supported?==
+
+Aspire 5010/5020 series under many Linux distributions. Both 32-bit and 64-bit kernels work.
+I've also had reports of success on the Aspire 3020 series, the Travelmate 4400 series, and a Fujitsu Siemens Amilo A1650.
+
+==3. What hardware is unsupported?==
+
+I know for a fact that aceracpi doesn't work on the Aspire 1500 series, or the Acer Ferrari 4000 series. The ACPI interface I use doesn't exist on that machine.
+
+==4. It doesn't work on supported hardware! I get "Unable to register driver, aborting!"==
+
+aceracpi versions 0.2 and below required you to modprobe the driver twice to make the driver work. This is resolved in version 0.3 and above. Alternatively, some Aspire 5000 series have a slightly different ACPI BIOS - try replacing {{{"PNP0C14"}}} with {{{"*PNP0C14"}}} in {{{acer_acpi.c}}} and recompiling. Let me know if that works! I do intend to handle that problem in a later version of aceracpi, time permitting.
+
+==5. dmesg tells me "No WMI Interface: unable to load"==
+
+Your laptop does not have the ACPI BIOS interface I use to control the hardware. There may be an equivalent function with a different name - in order to find it, you'll need to do some disassembly of your ACPI DSDT.
+
+==6. "Sorry, not yet implemented" or "Sorry, reading status not yet implemented"==
+
+{{{cat /proc/acpi/acer/{something} }}} doesn't yet do anything useful. One day ...
+The interfaces should work correctly, however.
+
+==7. I sent you an email ages ago, why haven't you replied?==
+
+See the answer to number 8, below
+
+==8. When is the next version of aceracpi coming out?==
+
+Answer to both (7) and (8) - unfortunately for aceracpi, since I got the last version out I have moved to a laptop with fully supported hardware, so don't use aceracpi myself any longer.  I'm still keeping the pages alive, though, and will roll a new version (work permitting) to incorporate the patches I have been sent sometime in the near future.
+
+
+And finally, not a frequently-asked-question ...
+
+==9. Can I maintain a package for $LINUX_DISTRO?==
+
+Feel free! That's what the GPL is for :-) But I'd appreciate an email, so I know in advance where to direct questions ;-)
+
+
+
