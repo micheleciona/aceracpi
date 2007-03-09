@@ -1,0 +1,62 @@
+#summary The original acer_acpi web page.
+#labels Featured
+
+= Introduction =
+
+Welcome to the development site for aceracpi, a Linux kernel module to allow control of some of the hardware on later model Acer (and other Wistron OEM) laptops.
+
+aceracpi was originally developed to enable the wireless LAN card of an Acer Aspire 5024 under 64-bit Linux (Fedora Core 4). The previous solution to hardware access on these laptops, Olaf Tauber's acerhk, relied on BIOS calls to work - unfortunately, it is not possible to call a 32-bit BIOS routine from a 64 bit operating system, so acer_acpi was born.
+
+aceracpi builds on Olaf's fantastic work with acerhk, as well as the work of several other developers working on laptop hardware control for Linux, such as John Belmonte (author of the toshiba_acpi kernel module, which was a huge inspiration).
+
+= Disclaimer =
+
+aceracpi is rather new, very basic, and has had very limited testing. In other words, it works for me. If you try it and it breaks your hardware, you get to keep the pieces.  _There is no warranty on this software!_
+
+= What aceracpi does =
+
+aceracpi creates entries under {{{/proc/acpi/acer}}}, which enable you to control the wireless LAN card, inbuilt Bluetooth adapter, and mail LED of your laptop. The syntax for each is the same:
+
+==To enable a feature:==
+{{{echo "enabled : 1" > /proc/acpi/acer/{feature} }}}
+
+==To disable a feature:==
+{{{echo "enabled : 0" > /proc/acpi/acer/{feature} }}}
+
+Where {feature} is either {{{wireless}}}, {{{bluetooth}}}, or {{{mailled}}}.
+
+= What aceracpi _doesn't_ do =
+
+Olaf Tauber's acerhk was developed to also allow access to extra keys on Acer laptops. acer_acpi doesn't do this. Yet. Many of the extra keys already emit scancodes on a 2.6 series kernel. I thoroughly recommend use of a late version of Ubuntu or Fedora Core, which seem to handle nearly all the keys 'out of the box'.
+
+= License =
+
+aceracpi is licensed under the GNU General Public License (GPL) version 2.
+
+= Download and Installation =
+
+You will need a C compiler, some basic development utilities (GNU make, install), and the kernel headers installed.
+
+If you don't know whether you have these, or how to install them, I'd suggest searching the discussion forums for your Linux distribution. I'm afraid I cannot give you any assistance with installation!
+
+  * Download the latest version of the source from the [http://code.google.com/p/aceracpi/downloads/list Downloads] page.
+  * Extract and build the sources:
+
+{{{
+tar zxvf acer_acpi-0.3.tar.gz
+cd acer_acpi-0.3
+make
+}}}
+
+  * If the compile is successful, as root:
+
+{{{
+make install
+modprobe acer_acpi
+}}}
+
+  * Assuming your kernel is still running(!), check out {{{dmesg}}} to see if the driver installed correctly, then check the {{{/proc/acpi/acer}}} directory to see if the control files are there.
+
+You may also want to check out the frequently asked questions (FAQ).
+
+Previous versions are archived on the site, in case I've introduced any regressions.
