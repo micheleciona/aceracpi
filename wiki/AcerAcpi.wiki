@@ -57,6 +57,33 @@ modprobe acer_acpi
 
   * Assuming your kernel is still running(!), check out {{{dmesg}}} to see if the driver installed correctly, then check the {{{/proc/acpi/acer}}} directory to see if the control files are there.
 
-You may also want to check out the frequently asked questions (FAQ).
+You may also want to check out the [http://code.google.com/p/aceracpi/w/FAQ frequently asked questions (FAQ)].
 
 Previous versions are archived on the site, in case I've introduced any regressions.
+
+= Contact me =
+
+You can contact me with comments, suggestions, or patches for acer_acpi via email, aceracpi@archernar.co.uk
+
+I'm particularly keen to receive reports of laptop models other than the 5020 series that aceracpi does work on, or patches to make it work on other models, so I can put a "supported hardware" section on this page.
+I will also try to help with debugging if aceracpi doesn't work for you, but it may take me a while to respond as real life may get in the way.
+
+= Notes and Issues =
+
+Sometimes when you attempt to load the driver, it fails as it is unable to register with the kernel ACPI subsystem. If anyone knows why this occurs, please contact me! Usually a second attempt at modprobe will allow the driver to load.
+
+If anyone out there has experience with Linux ACPI, particularly how to catch a process notify events properly, please email. Getting the non-supported keys to work will, I suspect, rely on trapping the notification the hardware gives and then reading the relevant data via ACPI. What to do with them then is the other big question ... is it possible to emit keyboard events to the kernel?
+
+= Revision History =
+
+    * 2005-10-16 version 0.3 released
+
+Bugfix for the double modprobe, couple of code tidies, sorry for the long delay!
+
+    * 2005-08-28 version 0.2 released
+
+The first public version of aceracpi.
+
+    * 2005-08-27 version 0.1
+
+Test version, used by a whole two people :-)
