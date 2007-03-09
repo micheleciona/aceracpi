@@ -1,6 +1,10 @@
 #summary The original acer_acpi web page.
 #labels Featured
 
+= Important =
+
+_ I don't user aceracpi any more, I'm afraid - I've moved on to a laptop that actually has supported hardware.  I'm keeping these pages up as a resource for anyone who DOES use aceracpi, and as a historical record.  I'm still happy to answer questions where I can, or receive patches (I intend to get a 0.4 version built soon!), but I'm not actively developing aceracpi any longer.  If anyone wants to take the module over, please mail me. _
+
 = Introduction =
 
 Welcome to the development site for aceracpi, a Linux kernel module to allow control of some of the hardware on later model Acer (and other Wistron OEM) laptops.
@@ -87,3 +91,4 @@ The first public version of aceracpi.
     * 2005-08-27 version 0.1
 
 Test version, used by a whole two people :-)
+
