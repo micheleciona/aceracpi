@@ -10,7 +10,7 @@ Jump to the [http://code.google.com/p/aceracpi/ main page] to find out.
 ==2. What hardware is supported?==
 
 Aspire 5010/5020 series under many Linux distributions. Both 32-bit and 64-bit kernels work.
-I've also had reports of success on the Aspire 3020 series, the Travelmate 4400 series, and a Fujitsu Siemens Amilo A1650.
+I've also had reports of success on the Aspire 3020 series, Aspire 9303wsmi, the Travelmate 4400 series, and a Fujitsu Siemens Amilo A1650.
 
 ==3. What hardware is unsupported?==
 
@@ -35,7 +35,7 @@ See the answer to number 8, below
 
 ==8. When is the next version of aceracpi coming out?==
 
-Answer to both (7) and (8) - unfortunately for aceracpi, since I got the last version out I have moved to a laptop with fully supported hardware, so don't use aceracpi myself any longer.  I'm still keeping the pages alive, though, and will roll a new version (work permitting) to incorporate the patches I have been sent sometime in the near future.
+Answer to both (7) and (8) - unfortunately for aceracpi, since I got the last version out I have moved to a laptop with fully supported hardware, so don't use aceracpi myself any longer.  I'm still keeping the pages alive, though, and rolled out version 0.4 at the end of March 2007.  That'll probably be the last version I publish, unless I get any more patches.
 
 
 And finally, not a frequently-asked-question ...
@@ -43,6 +43,5 @@ And finally, not a frequently-asked-question ...
 ==9. Can I maintain a package for $LINUX_DISTRO?==
 
 Feel free! That's what the GPL is for :-) But I'd appreciate an email, so I know in advance where to direct questions ;-)
-
 
 
