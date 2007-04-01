@@ -3,7 +3,7 @@
 
 = Important =
 
-_ I don't user aceracpi any more, I'm afraid - I've moved on to a laptop that actually has supported hardware.  I'm keeping these pages up as a resource for anyone who DOES use aceracpi, and as a historical record.  I'm still happy to answer questions where I can, or receive patches (I intend to get a 0.4 version built soon!), but I'm not actively developing aceracpi any longer.  If anyone wants to take the module over, please mail me. _
+_ I don't user aceracpi any more, I'm afraid - I've moved on to a laptop that actually has supported hardware.  I'm keeping these pages up as a resource for anyone who DOES use aceracpi, and as a historical record.  I'm still happy to answer questions where I can, or receive patches, but I'm not actively developing aceracpi any longer.  If anyone wants to take the module over, please mail me. _
 
 = Introduction =
 
@@ -47,8 +47,8 @@ If you don't know whether you have these, or how to install them, I'd suggest se
   * Extract and build the sources:
 
 {{{
-tar zxvf acer_acpi-0.3.tar.gz
-cd acer_acpi-0.3
+tar zxvf acer_acpi-0.4.tar.gz
+cd acer_acpi-0.4
 make
 }}}
 
@@ -80,6 +80,11 @@ If anyone out there has experience with Linux ACPI, particularly how to catch a 
 
 = Revision History =
 
+    * 2007-03-31 version 0.4 released
+
+Now compiles on current 2.6 series kernels.
+References to acer_acpi's home changed to code.google.com/p/aceracpi
+
     * 2005-10-16 version 0.3 released
 
 Bugfix for the double modprobe, couple of code tidies, sorry for the long delay!
@@ -91,4 +96,3 @@ The first public version of aceracpi.
     * 2005-08-27 version 0.1
 
 Test version, used by a whole two people :-)
-
