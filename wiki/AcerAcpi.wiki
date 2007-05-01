@@ -1,6 +1,12 @@
 #summary The original acer_acpi web page.
 #labels Featured
 
+= Very Important Person =
+
+I'm delighted to report that following my request in the section below, someone who uses aceracpi and has contributed patches and suggestions has volunteered to take over maintainership.  :)  More soon, along with version 0.5!
+
+On a personal note, thanks to everyone who's contributed, asked questions, sent suggestions, or simply sent a "thanks" email to me, and thanks again to all those on whose shoulders I stood to make this thing work ... aceracpi started in the way these projects do, as an itch that needed scratching, a problem that HAD to have a solution, and even though I haven't been able to keep up with it myself I'm happy to see that lots of people have found it of use, and that someone feels strongly enough to take it over and keep the ball rolling.
+
 = Important =
 
 _ I don't user aceracpi any more, I'm afraid - I've moved on to a laptop that actually has supported hardware.  I'm keeping these pages up as a resource for anyone who DOES use aceracpi, and as a historical record.  I'm still happy to answer questions where I can, or receive patches, but I'm not actively developing aceracpi any longer.  If anyone wants to take the module over, please mail me. _
@@ -96,3 +102,6 @@ The first public version of aceracpi.
     * 2005-08-27 version 0.1
 
 Test version, used by a whole two people :-)
+
+
+
