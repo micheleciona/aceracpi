@@ -1,0 +1,53 @@
+#summary The following is a list of laptops known to be supported or unsupported by acer_acpi.
+
+= Supported Hardware =
+== Introduction ==
+
+To summarise: the driver only supports those laptops that present a WMI interface that can be manipulated via ACPI. So, any laptop that doesn't provide this interface, or any of the older Dritek type laptops are not supported (for the latter, use acerhk).
+
+acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Siemens laptop uses this interface as well.
+
+Unfortunately, it is not possible to tell by the hardware alone what models require acer_acpi - different models use different chipsets (ATi and nVidia have both been seen). The chances are, if you need to install LaunchManager (or similar) on Windows just to turn on your wireless, then you probably need this driver.
+
+If you discover your hardware is supported by acer_acpi and it is not listed here, please send a dump of /proc/acpi/dsdt to me (cathectic(@)gmail.com), also listing the make and model of your laptop.
+
+If your hardware is not listed on either supported or unsupported, and acer_acpi does not load, please send me the dump of /proc/acpi/dsdt and the make and model anyway, as that way we decide if acer_acpi just needs tweaking to work on your hardware, or so we can definitely rule out your hardware as compatible.
+
+If your hardware is listed as _not_ having a dump available, please send one - we are looking into any additional functionality that acer_acpi can expose (which, at the moment, seems to be none).
+
+Legend:
+
+  * [u] = Unconfirmed (Taken from the internet, please confirm this if you have this model)
+  * [c] = Confirmed (We have been directly contacted and informed this works)
+  * [d] = DSDT available
+  * [dw] = DSDT wanted
+
+== Supported ==
+
+===Acer===
+====Aspire====
+  * 3020 series [u, dw]
+  * 3610 series [u, dw]
+  * 5020 series [c, d]
+  * 5040 series [u, dw]
+  * 5560 series [u, dw]
+  * 9300 series [u, dw]
+  * 9420 series [u, dw]
+
+====Travelmate====
+  * 4400 series [u, dw]
+
+===Fujitsu Siemens===
+====Amilo====
+  * A1650 [u, dw]
+
+== Unsupported ==
+
+This list is _very_ incomplete. The models listed here are the ones known to absolutely _not_ work with this driver - if you have one of these: it is not, cannot and will not be supported by acer_acpi. (Some of these might be useable with acerhk, or the wireless/ bluetooth switches may be hardware driven instead and not require any software).
+
+===Acer===
+====Aspire====
+  * 1500 series
+
+====Ferrari====
+  * 4000 series
