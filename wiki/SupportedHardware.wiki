@@ -16,7 +16,7 @@ If your hardware is not listed on either supported or unsupported, and acer_acpi
 
 If your hardware is listed as _not_ having a dump available, please send one - we are looking into any additional functionality that acer_acpi can expose (which, at the moment, seems to be none).
 
-DSDT dumps (translated to readable ASL) can be found in 
+All of our available DSDT dumps (translated to readable ASL) can be found in the [http://aceracpi.googlecode.com/svn/trunk/dsdt/ Subversion repository]
 
 Legend:
 
