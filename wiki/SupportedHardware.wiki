@@ -4,7 +4,7 @@
 = Supported Hardware =
 == Introduction ==
 
-To summarise: the driver only supports those laptops that present a WMI interface that can be manipulated via ACPI. So, any laptop that doesn't provide this interface, or any of the older Dritek type laptops are not supported (for the latter, use acerhk).
+To summarise: the driver only supports those laptops that present a WMI interface that can be manipulated via ACPI. So, any laptop that doesn't provide this interface, or any of the older Dritek type laptops are not supported (for the latter, use acerhk). Laptops using the newer interface are not yet supported.
 
 acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Siemens laptop uses this interface as well.
 
@@ -51,8 +51,12 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 ===Acer===
 ====Aspire====
   * 1500 series
-  * 5000 series [c,d]
-  * 5650 series [c,d] (Uses a new ACPI interfaces - needs reverse engineering)
+  * 5000 series [c,d] (No WMI ACPI interface - will not support)
+  * 5100 series [c,d] (Uses a new WMI ACPI interface - needs reverse engineering)
+  * 5650 series [c,d] (Uses a new WMI ACPI interface - needs reverse engineering)
 
 ====Ferrari====
-  * 4000 series
+  * 4000 series [u,dw] (No WMI ACPI interface - will not support)
+
+====TravelMate====
+  * 3620 series [c,d] (Uses a new WMI ACPI interface - needs reverse engineering)
