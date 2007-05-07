@@ -16,12 +16,14 @@ If your hardware is not listed on either supported or unsupported, and acer_acpi
 
 If your hardware is listed as _not_ having a dump available, please send one - we are looking into any additional functionality that acer_acpi can expose (which, at the moment, seems to be none).
 
+DSDT dumps (translated to readable ASL) can be found in 
+
 Legend:
 
-  * [u] = Unconfirmed (Taken from the internet, please confirm this if you have this model)
-  * [c] = Confirmed (We have been directly contacted and informed this works)
+  * [u] = Unconfirmed (Taken from the internet, please confirm if you have this model)
+  * [c] = Confirmed (We have been told that this works, or confirmed that it doesn't)
   * [d] = DSDT available
-  * [dw] = DSDT wanted
+  * [dw] = DSDT wanted (Please submit yours to us)
 
 == Supported ==
 
@@ -49,7 +51,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 ===Acer===
 ====Aspire====
   * 1500 series
-  * 5000 series
+  * 5000 series [c,d]
 
 ====Ferrari====
   * 4000 series
