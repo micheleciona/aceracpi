@@ -29,29 +29,30 @@ Legend:
 
 ===Acer===
 ====Aspire====
-  * 3020 series [u, dw]
-  * 3610 series [u, dw]
-  * 5020 series [c, d]
-  * 5040 series [u, dw]
-  * 5560 series [u, dw]
-  * 9300 series [u, dw]
-  * 9420 series [u, dw]
+  * 3020 series [u,dw]
+  * 3610 series [u,dw]
+  * 5020 series [c,d]
+  * 5040 series [u,dw]
+  * 5560 series [u,dw]
+  * 9300 series [u,dw]
+  * 9420 series [u,dw]
 
 ====Travelmate====
-  * 4400 series [u, dw]
+  * 4400 series [c,d]
 
 ===Fujitsu Siemens===
 ====Amilo====
-  * A1650 [u, dw]
+  * A1650 [c,d]
 
 == Unsupported ==
 
-This list is _very_ incomplete. The models listed here are the ones known to absolutely _not_ work with this driver - if you have one of these: it is not, cannot and will not be supported by acer_acpi. (Some of these might be useable with acerhk, or the wireless/ bluetooth switches may be hardware driven instead and not require any software).
+This list is _very_ incomplete. The models listed here are the ones known to absolutely _not_ work with this driver - if you have one of these: it is not, cannot and will not (unless stated otherwise) be supported by acer_acpi. (Some of these might be useable with acerhk, or the wireless/ bluetooth switches may be hardware driven instead and not require any software).
 
 ===Acer===
 ====Aspire====
   * 1500 series
   * 5000 series [c,d]
+  * 5650 series [c,d] (Uses a new ACPI interfaces - needs reverse engineering)
 
 ====Ferrari====
   * 4000 series
