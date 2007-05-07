@@ -1,4 +1,5 @@
 #summary The following is a list of laptops known to be supported or unsupported by acer_acpi.
+#labels Featured
 
 = Supported Hardware =
 == Introduction ==
@@ -48,6 +49,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 ===Acer===
 ====Aspire====
   * 1500 series
+  * 5000 series
 
 ====Ferrari====
   * 4000 series
