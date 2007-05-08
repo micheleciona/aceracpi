@@ -24,6 +24,8 @@ Legend:
   * [c] = Confirmed (We have been told that this works, or confirmed that it doesn't)
   * [d] = DSDT available
   * [dw] = DSDT wanted (Please submit yours to us)
+  * [n] = No WMI ACPI interface, will not support
+  * [r] = New WMI ACPI interface, requires reverse engineering (please contact us to help with this if you can)
 
 == Supported ==
 
@@ -51,12 +53,12 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 ===Acer===
 ====Aspire====
   * 1500 series [u,dw]
-  * 5000 series [c,d] (No WMI ACPI interface - will not support)
-  * 5100 series [c,d] (Uses a new WMI ACPI interface - needs reverse engineering)
-  * 5650 series [c,d] (Uses a new WMI ACPI interface - needs reverse engineering)
+  * 5000 series [c,d,n]
+  * 5100 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
+  * 5650 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
 
 ====Ferrari====
-  * 4000 series [u,dw] (No WMI ACPI interface - will not support)
+  * 4000 series [u,dw,n]
 
 ====TravelMate====
-  * 3620 series [c,d] (Uses a new WMI ACPI interface - needs reverse engineering)
+  * 3620 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
