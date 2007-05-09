@@ -34,7 +34,7 @@ Legend:
   * 3020 series [u,dw]
   * 3610 series [u,dw]
   * 5020 series [c,d]
-  * 5040 series [u,dw]
+  * 5040 series [c,d]
   * 5560 series [c,d] (Wireless is a hardware switch, not controlled by acer_acpi)
   * 9300 series [u,dw]
   * 9420 series [u,dw]
