@@ -54,8 +54,10 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 ====Aspire====
   * 1500 series [u,dw]
   * 5000 series [c,d,n]
+  * 5050 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
   * 5100 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
   * 5650 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
+  * 6510 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
 
 ====Ferrari====
   * 4000 series [u,dw,n]
