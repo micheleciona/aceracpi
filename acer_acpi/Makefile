@@ -3,12 +3,9 @@
 #KERNELSRC=/usr/src/linux
 #KERNELSRC=/usr/src/kernel-source-2.4.21-acpi-i2c-lmsensors
 KERNELSRC?=/lib/modules/`uname -r`/build
-KERNELVERSION=$(shell awk -F\" '/REL/ {print $$2}' $(KERNELSRC)/include/linux/utsrelease.h)
-
-# Compatibility with 2.6.17 and older 2.6 kernels
-ifeq ($(KERNELVERSION),)
-KERNELVERSION=$(shell awk -F\" '/REL/ {print $$2}' $(KERNELSRC)/include/linux/version.h)
-endif
+KERNELVERSION=$(shell for f in $(KERNELSRC)/include/linux/{utsrelease.h,version.h}; do \
+	test -f $$f && awk -F\" '/RELEASE/ {print $$2}' $$f && break; \
+	done)
 
 KERNELMAJOR=$(shell echo $(KERNELVERSION)|head -c3)
 KBUILD_BASENAME=
