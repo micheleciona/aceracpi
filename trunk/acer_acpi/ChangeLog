@@ -1,3 +1,10 @@
+2007-??-??	Version 0.6
+
+* Ran code through lindent (Kernel coding style)
+
+* Patched Makefile to stop complaining on kernels 2.6.17
+  (Thanks to Subbu)
+
 2007-05-05	Version 0.5
 
 * Added new maintainer (Carlos Corbacho)

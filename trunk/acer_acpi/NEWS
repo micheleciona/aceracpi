@@ -1,3 +1,7 @@
+200?-??-?? Version 0.6
+	Cleaned up code in line with kernel coding conventions
+	Makefile no longer gives harmless errors on older 2.6 kernels
+
 2007-05-05 Version 0.5
 	New maintainer added: Carlos Corbacho <cathectic@gmail.com>	
 	cat /proc/acpi/acer/{feature} now works - see ChangeLog for more
