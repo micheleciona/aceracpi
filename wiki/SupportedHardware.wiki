@@ -37,7 +37,7 @@ Legend:
   * 5040 series [c,d]
   * 5560 series [c,d] (Wireless is a hardware switch, not controlled by acer_acpi)
   * 9300 series [u,dw]
-  * 9420 series [u,dw]
+  * 9420 series [c,d] (Wireless is a hardware switch, not controlled by acer_acpi)
 
 ====Travelmate====
   * 4400 series [c,d]
