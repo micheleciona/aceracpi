@@ -2,6 +2,8 @@
 
 * Ran code through lindent (Kernel coding style)
 
+* Simplified write_{feature} method calls
+
 * Patched Makefile to stop complaining on kernels 2.6.17
   (Thanks to Subbu)
 
