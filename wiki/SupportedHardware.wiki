@@ -57,6 +57,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 5000 series [c,d,n]
   * 5050 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
   * 5100 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
+  * 5580 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
   * 5650 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
   * 6510 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
 
