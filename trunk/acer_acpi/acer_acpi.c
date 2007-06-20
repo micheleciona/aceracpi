@@ -63,13 +63,19 @@ MODULE_LICENSE("GPL");
 #define MY_INFO KERN_INFO MY_LOGPREFIX
 
 /*
- * Capabilities - eventually we'll use these to determine which laptop
- * model requires the various proc entries creating. 
+ * Magic Number -
+ * Meaning is unknown - this number is required for writing to ACPI
+ * (it's also used in acerhk when directly accessing the EC)
  */
-#define ACER_WIRELESS	0x01
-#define ACER_BLUETOOTH  0x02
-#define ACER_MAILLED	0x04
-#define ACER_ALLBITS	0xFFFFFFFF
+#define ACER_WRITE	0x9610
+
+/*
+ * Bit masks -
+ * These could vary between the particular interface
+ */
+#define ACER_WIRELESS	0x35
+#define ACER_BLUETOOTH  0x34
+#define ACER_MAILLED	0x31
 
 /*
  * Acer ACPI method paths 
@@ -208,30 +214,48 @@ dispatch_write(struct file *file, const char __user * buffer,
 }
 
 /*
- * Mail LED 
+ * Generic Device
  */
-static char *read_mled(char *p)
+static char *read_generic(char *p, int device)
 {
-	p += sprintf(p, "%d\n", mailled);
+	p += sprintf(p, "%d\n", device);
 	return p;
 }
 
-static unsigned long write_mled(const char *buffer, unsigned long count)
+static unsigned long write_generic(const char *buffer, unsigned long count, int *device, int mask)
 {
 	int value;
 	WMAB_args args;
 
-	if (sscanf(buffer, " enabled : %i", &value) == 1
+	/*
+	 * For now, we are still supporting the "enabled: %i" - this _will_ be deprecated in 0.7
+	 */
+	if ((sscanf(buffer, " enabled : %i", &value) == 1
+		|| sscanf(buffer, "%i", &value) == 1)
 	    && (value == 0 || value == 1)) {
 		memset(&args, 0, sizeof(WMAB_args));
-		args.eax = 0x9610;
-		args.ebx = (value << 8) | 0x31;
+		args.eax = ACER_WRITE;
+		args.ebx = (value << 8) | mask;
 		WMAB_execute(&args, NULL);
-		mailled = value;
+		*device = value;
 	} else {
 		return -EINVAL;
 	}
 	return count;
+}
+
+
+/*
+ * Mail LED 
+ */
+static char *read_mled(char *p)
+{
+	return read_generic(p, mailled);
+}
+
+static unsigned long write_mled(const char *buffer, unsigned long count)
+{
+	return write_generic(buffer, count, &mailled, ACER_MAILLED);
 }
 
 /*
@@ -239,26 +263,12 @@ static unsigned long write_mled(const char *buffer, unsigned long count)
  */
 static char *read_bt(char *p)
 {
-	p += sprintf(p, "%d\n", bluetooth);
-	return p;
+	return read_generic(p, bluetooth);
 }
 
 static unsigned long write_bt(const char *buffer, unsigned long count)
 {
-	int value;
-	WMAB_args args;
-
-	if (sscanf(buffer, " enabled : %i", &value) == 1
-	    && (value == 0 || value == 1)) {
-		memset(&args, 0, sizeof(WMAB_args));
-		args.eax = 0x9610;
-		args.ebx = (value << 8) | 0x34;
-		WMAB_execute(&args, NULL);
-		bluetooth = value;
-	} else {
-		return -EINVAL;
-	}
-	return count;
+	return write_generic(buffer, count, &bluetooth, ACER_BLUETOOTH);
 }
 
 /*
@@ -266,27 +276,34 @@ static unsigned long write_bt(const char *buffer, unsigned long count)
  */
 static char *read_wlan(char *p)
 {
-	p += sprintf(p, "%d\n", wireless);
-	return p;
+	return read_generic(p, wireless);
 }
 
 static unsigned long write_wlan(const char *buffer, unsigned long count)
 {
-	int value;
-	WMAB_args args;
+	return write_generic(buffer, count, &wireless, ACER_WIRELESS);
+}
 
-	if (sscanf(buffer, " enabled : %i", &value) == 1
-	    && (value == 0 || value == 1)) {
-		memset(&args, 0, sizeof(WMAB_args));
-		args.eax = 0x9610;
-		args.ebx = (value << 8) | 0x35;
-		WMAB_execute(&args, NULL);
-		wireless = value;
-		printk(MY_INFO "Wireless value %i\n", value);
-	} else {
-		return -EINVAL;
+static void acpi_acerreset(void)
+{
+	int count = 0;		// Throwaway variable
+	/*
+	 * Ensure the values in /proc/acpi/acer are known by resetting them.
+	 * The default is for everything to be off, unless the module
+	 * parameters specify otherwise.
+	 */
+	/* FIXME */
+	if (wireless == 1 || wireless == 0) {
+		write_wlan("" + wireless, count);
 	}
-	return count;
+
+	if (wireless == 1 || wireless == 0) {
+		write_bt("" + bluetooth, count);
+	}
+
+	if (mailled == 1 || mailled == 0) {
+		write_mled("" + mailled, count);
+	}
 }
 
 static char *read_version(char *p)
@@ -298,10 +315,10 @@ static char *read_version(char *p)
 }
 
 ProcItem proc_items[] = {
-	{"mailled", read_mled, write_mled, ACER_MAILLED},
-	{"bluetooth", read_bt, write_bt, ACER_BLUETOOTH},
-	{"wireless", read_wlan, write_wlan, ACER_WIRELESS},
-	{"version", read_version, NULL, ACER_ALLBITS},
+	{"mailled", read_mled, write_mled},
+	{"bluetooth", read_bt, write_bt},
+	{"wireless", read_wlan, write_wlan},
+	{"version", read_version, NULL},
 	{NULL}
 };
 
@@ -393,8 +410,8 @@ static int acpi_acerkeys_remove(struct acpi_device *device, int type)
 }
 
 static struct acpi_driver acpi_acerkeys = {
-	.name = "Acer Laptop ACPI Extras driver",
-	.class = "hkey",
+	.name = "acer_acpi",
+	.class = "hotkey",
 	.ids = "PNP0C14",
 	.ops = {
 		.add = acpi_acerkeys_add,
@@ -406,7 +423,6 @@ static int __init acer_acpi_init(void)
 {
 	WMAB_args args;
 	acpi_status status = AE_OK;
-	int count = 0;		// Throwaway variable
 
 	printk(MY_INFO "Acer Laptop ACPI Extras version %s\n",
 	       ACER_ACPI_VERSION);
@@ -424,7 +440,7 @@ static int __init acer_acpi_init(void)
 		args.ebx = 0;
 		status = WMAB_execute(&args, NULL);
 	} else {
-		printk(MY_ERR "No WMI interface, unable to load.\n");
+		printk(MY_ERR "No or unsupported WMI interface, unable to load.\n");
 		return -ENODEV;
 	}
 
@@ -449,29 +465,7 @@ static int __init acer_acpi_init(void)
 	} else {
 		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
 	}
-
-	/*
-	 * Ensure the values in /proc/acpi/acer are known by resetting them
-	 * now. The default is for everything to be off, unless the module
-	 * parameters specify otherwise.
-	 */
-	if (wireless == 1) {
-		write_wlan("enabled : 1", count);
-	} else {
-		write_wlan("enabled : 0", count);
-	}
-
-	if (bluetooth == 1) {
-		write_bt("enabled : 1", count);
-	} else {
-		write_bt("enabled : 0", count);
-	}
-
-	if (mailled == 1) {
-		write_mled("enabled : 1", count);
-	} else {
-		write_mled("enabled : 0", count);
-	}
+	acpi_acerreset();
 
 	return (ACPI_SUCCESS(status)) ? 0 : -ENODEV;
 }
