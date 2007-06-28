@@ -300,12 +300,12 @@ static acpi_status WMAB_execute(WMAB_args * regbuf, struct acpi_buffer *result)
 static acpi_status AMW0_init(Interface *iface) {
 	WMAB_args args;
 	acpi_status status;
-/*	AMW0_Data *data = iface->data; */
+	/*AMW0_Data *data = iface->data; */
 
 	/* Allocate our private data structure */
 	iface->data = kmalloc(sizeof(AMW0_Data), GFP_KERNEL);
 
-AMW0_Data *data = iface->data;
+	AMW0_Data *data = iface->data;
 
 	/* 
 	 * Call the interface once so the BIOS knows it's to notify us of
@@ -331,8 +331,7 @@ AMW0_Data *data = iface->data;
 	 * Set the cached "current" values to impossible ones so that
 	 * acer_commandline_init will definitely set them.
 	 */
-/*	data->wireless = data->mailled = data->bluetooth = -1; */
-	data->wireless = -1;
+	data->wireless = data->mailled = data->bluetooth = -1;
 
 	return status;
 }
