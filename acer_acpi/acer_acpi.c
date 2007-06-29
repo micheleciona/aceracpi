@@ -99,6 +99,8 @@ MODULE_LICENSE("GPL");
 #define ACER_WMID_SET_WIRELESS_METHODID   4
 #define ACER_WMID_SET_BLUETOOTH_METHODID  5
 #define ACER_WMID_SET_BRIGHTNESS_METHODID 6
+#define ACER_WMID_GET_THREEG_METHODID 9
+#define ACER_WMID_SET_THREEG_METHODID 10
 
 /*
  * Acer ACPI method paths 
@@ -118,6 +120,7 @@ MODULE_LICENSE("GPL");
 #define ACER_CAP_WIRELESS   (1<<1)
 #define ACER_CAP_BLUETOOTH  (1<<2)
 #define ACER_CAP_BRIGHTNESS (1<<3)
+#define ACER_CAP_THREEG     (1<<4)
 #define ACER_CAP_ANY        (0xffffffff)
 
 /*
@@ -146,23 +149,27 @@ MODULE_LICENSE("GPL");
 #define ACER_DEFAULT_WIRELESS  0
 #define ACER_DEFAULT_BLUETOOTH 0
 #define ACER_DEFAULT_MAILLED   0
+#define ACER_DEFAULT_THREEG    0
 #define ACER_DEFAULT_BRIGHTNESS ACER_MAX_BRIGHTNESS
 
 static int wireless = -1;
 static int bluetooth = -1;
 static int mailled = -1;
 static int brightness = -1;
+static int threeg = -1;
 static int debug = 0;
 
 module_param(mailled, int, 0444);
 module_param(wireless, int, 0444);
 module_param(bluetooth, int, 0444);
 module_param(brightness, int, 0444);
+module_param(threeg, int, 0444);
 module_param(debug, int, 0664);
 MODULE_PARM_DESC(wireless, "Set initial state of Wireless hardware");
 MODULE_PARM_DESC(bluetooth, "Set initial state of Bluetooth hardware");
 MODULE_PARM_DESC(mailled, "Set initial state of Mail LED");
 MODULE_PARM_DESC(brightness, "Set initial LCD backlight brightness");
+MODULE_PARM_DESC(threeg, "Set initial state of 3G hardware");
 MODULE_PARM_DESC(debug, "Debugging verbosity level (0=least 2=most)");
 
 typedef struct _ProcItem {
@@ -508,6 +515,9 @@ static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface) {
 		case ACER_CAP_BRIGHTNESS:
 			methodId = ACER_WMID_GET_BRIGHTNESS_METHODID;
 			break;
+		case ACER_CAP_THREEG:
+			methodId = ACER_WMID_GET_THREEG_METHODID;
+			break;
 		default:
 			return AE_BAD_ADDRESS;
 	}
@@ -531,6 +541,8 @@ static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface) {
 			break;
 		case ACER_CAP_BLUETOOTH:
 			methodId = ACER_WMID_SET_BLUETOOTH_METHODID;
+		case ACER_CAP_THREEG:
+			methodId = ACER_WMID_SET_THREEG_METHODID;
 			break;
 		default:
 			return AE_BAD_ADDRESS;
@@ -543,7 +555,8 @@ static Interface WMID_interface = {
 	.capability = (
 		ACER_CAP_WIRELESS |
 		ACER_CAP_BLUETOOTH |
-		ACER_CAP_BRIGHTNESS
+		ACER_CAP_BRIGHTNESS |
+		ACER_CAP_THREEG
 	),
 	.get_bool = get_bool_via_u8,
 	.set_bool = set_bool_via_u8,
@@ -675,6 +688,7 @@ static void acpi_commandline_init(void)
 	set_bool(mailled, ACER_CAP_MAILLED);
 	set_bool(wireless, ACER_CAP_WIRELESS);
 	set_bool(bluetooth, ACER_CAP_BLUETOOTH);
+	set_bool(threeg, ACER_CAP_THREEG);
 	set_brightness((uint8_t)brightness);
 }
 
@@ -758,6 +772,7 @@ ProcItem proc_items[] = {
 	{"bluetooth", read_bool, write_bool, ACER_CAP_BLUETOOTH},
 	{"wireless", read_bool, write_bool, ACER_CAP_WIRELESS},
 	{"brightness", read_u8, write_u8, ACER_CAP_BRIGHTNESS},
+	{"threeg", read_u8, write_u8, ACER_CAP_THREEG},
 	{"version", read_version, NULL, ACER_CAP_ANY},
 	{NULL}
 };
