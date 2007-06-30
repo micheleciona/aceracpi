@@ -307,12 +307,11 @@ static acpi_status WMAB_execute(WMAB_args * regbuf, struct acpi_buffer *result)
 static acpi_status AMW0_init(Interface *iface) {
 	WMAB_args args;
 	acpi_status status;
-	/*AMW0_Data *data = iface->data; */
-
-	/* Allocate our private data structure */
+	AMW0_Data *data;
+ 
+        /* Allocate our private data structure */
 	iface->data = kmalloc(sizeof(AMW0_Data), GFP_KERNEL);
-
-	AMW0_Data *data = iface->data;
+	data = (AMW0_Data*)iface->data;
 
 	/* 
 	 * Call the interface once so the BIOS knows it's to notify us of
@@ -772,7 +771,7 @@ ProcItem proc_items[] = {
 	{"bluetooth", read_bool, write_bool, ACER_CAP_BLUETOOTH},
 	{"wireless", read_bool, write_bool, ACER_CAP_WIRELESS},
 	{"brightness", read_u8, write_u8, ACER_CAP_BRIGHTNESS},
-	{"threeg", read_u8, write_u8, ACER_CAP_THREEG},
+	{"threeg", read_bool, write_bool, ACER_CAP_THREEG},
 	{"version", read_version, NULL, ACER_CAP_ANY},
 	{NULL}
 };
