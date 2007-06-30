@@ -26,43 +26,43 @@ Legend:
   * [dw] = DSDT wanted (Please submit yours to us)
   * [n] = No WMI ACPI interface, will not support
   * [r] = New WMI ACPI interface, requires reverse engineering (please contact us to help with this if you can)
+  * [1] = Version 1 (AMW0 interface)
+  * [2] = Version 2 (WMID interface)
 
 == Supported ==
 
 ===Acer===
 ====Aspire====
-  * 3020 series [u,dw]
-  * 3610 series [u,dw]
-  * 5020 series [c,d]
-  * 5040 series [c,d]
-  * 5560 series [c,d] (Wireless is a hardware switch, not controlled by acer_acpi)
-  * 9300 series [u,dw]
-  * 9420 series [c,d] (Wireless is a hardware switch, not controlled by acer_acpi)
+  * 3020 series [u,dw,1]
+  * 3610 series [u,dw,1]
+  * 5020 series [c,d,1]
+  * 5040 series [c,d,1]
+  * 5050 series [c,d,2]
+  * 5100 series [c,d,2]
+  * 5560 series [c,d,1] (Wireless is a hardware switch, not controlled by acer_acpi)
+  * 5580 series [c,d,2]
+  * 5650 series [c,d,2]
+  * 6510 series [c,d,2]
+  * 9300 series [u,dw,1]
+  * 9420 series [c,d,1] (Wireless is a hardware switch, not controlled by acer_acpi)
 
 ====Travelmate====
-  * 4400 series [c,d]
+  * 3620 series [c,d,2]
+  * 4400 series [c,d,1]
 
 ===Fujitsu Siemens===
 ====Amilo====
-  * A1650 [c,d]
+  * A1650 [c,d,1]
 
 == Unsupported ==
 
-This list is _very_ incomplete. The models listed here are the ones known to absolutely _not_ work with this driver - if you have one of these: it is not, cannot and will not (unless stated otherwise) be supported by acer_acpi. (Some of these might be useable with acerhk, or the wireless/ bluetooth switches may be hardware driven instead and not require any software).
+This list is _very_ incomplete. The models listed here are the ones known to absolutely _not_ work with this driver - if you have one of these: it is not, cannot and will not be supported by acer_acpi. (Some of these might be useable with acerhk, or the wireless/ bluetooth switches may be hardware driven instead and not require any software).
 
 ===Acer===
 ====Aspire====
   * 1500 series [u,dw]
   * 1520 series [c,d,n]
   * 5000 series [c,d,n]
-  * 5050 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
-  * 5100 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
-  * 5580 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
-  * 5650 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
-  * 6510 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
 
 ====Ferrari====
   * 4000 series [u,dw,n]
-
-====TravelMate====
-  * 3620 series [c,d,r] (Uses a new WMI ACPI interface - needs reverse engineering)
