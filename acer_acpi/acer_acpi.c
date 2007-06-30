@@ -308,8 +308,8 @@ static acpi_status AMW0_init(Interface *iface) {
 	WMAB_args args;
 	acpi_status status;
 	AMW0_Data *data;
- 
-        /* Allocate our private data structure */
+
+	/* Allocate our private data structure */
 	iface->data = kmalloc(sizeof(AMW0_Data), GFP_KERNEL);
 	data = (AMW0_Data*)iface->data;
 
