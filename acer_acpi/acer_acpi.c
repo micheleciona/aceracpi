@@ -248,7 +248,7 @@ static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface) 
 
 	status = iface->get_u8(&result, cap, iface);
 
-        if (ACPI_SUCCESS(status))
+	if (ACPI_SUCCESS(status))
 		*value = (result != 0);
 
 	return status;
@@ -259,6 +259,41 @@ static acpi_status set_bool_via_u8(bool value, uint32_t cap, Interface *iface) {
 
 	return iface->set_u8(v, cap, iface);
 }
+
+/* General wrapper around the ACPI call */
+static acpi_status
+WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, struct acpi_buffer *out) {
+	struct acpi_object_list input;
+	union acpi_object params[3];
+	acpi_status status = AE_OK;
+
+	/* WMI calling convention:
+	 *  methodPath( instance, methodId, input_buffer )
+	 *    - instance is always 1, since there's only this module
+	 *    - methodId is the method number within the current method group.
+	 *    - Input buffer is ignored for read-only commands
+	 *    - May return a buffer of results (optional)
+	 */
+	input.count = 3;
+	input.pointer = params;
+	params[0].type = ACPI_TYPE_INTEGER;
+	params[0].integer.value = 0x01;
+	params[1].type = ACPI_TYPE_INTEGER;
+	params[1].integer.value = methodId;
+	params[2].type = ACPI_TYPE_BUFFER;
+	params[2].buffer.length = in->length;
+	params[2].buffer.pointer = in->pointer;
+
+	DEBUG(2, "Doing %s( 1, %u, [%llu-byte buffer] )\n", methodPath, methodId, in->length);
+
+	status = acpi_evaluate_object(NULL, methodPath, &input, out);
+
+	DEBUG(2, "  Execution status: %d\n", status);
+	DEBUG(2, "  Result: %llu bytes\n", out ? out->length : 0 );
+
+	return status;
+}
+
 
 /*
  * Old interface (now known as the AMW0 interface)
@@ -278,28 +313,13 @@ typedef struct _AMW0_Data {
 
 static acpi_status WMAB_execute(WMAB_args * regbuf, struct acpi_buffer *result)
 {
-	struct acpi_object_list input;
-	union acpi_object params[3];
+	struct acpi_buffer input;
+	acpi_status status;
+	input.length = sizeof(WMAB_args);
+	input.pointer = (u8*)regbuf;
 
-	acpi_status status = AE_OK;
-	input.count = 3;
-	input.pointer = params;
-
-	params[0].type = ACPI_TYPE_INTEGER;
-	params[0].integer.value = 0x01;	/* Only one instance of this object */
-	params[1].type = ACPI_TYPE_INTEGER;
-	params[1].integer.value = 0x01;	/* Technically this should be method ID */
-	params[2].type = ACPI_TYPE_BUFFER;
-	params[2].buffer.length = sizeof(WMAB_args);
-	params[2].buffer.pointer = (u8 *) regbuf;
-
-        DEBUG(2, "Doing %s( 1, 1, [%u-byte buffer] )\n", AMW0_METHOD, params[2].buffer.length);
-
-	status = acpi_evaluate_object(NULL, AMW0_METHOD, &input, result);
-
-        DEBUG(2, "  Execution status: %d\n", status);
+	status = WMI_execute( AMW0_METHOD, 1, &input, result);
 	DEBUG(2, "  Args: 0x%08x 0x%08x 0x%08x 0x%08x\n", regbuf->eax, regbuf->ebx, regbuf->ecx, regbuf->edx );
-	DEBUG(2, "  Result: %llu bytes\n", result ? result->length : 0 );
 
 	return status;
 }
@@ -432,50 +452,19 @@ static Interface AMW0_interface = {
  */
 
 static acpi_status
-WMI_execute(uint32_t methodId, const struct acpi_buffer *in, struct acpi_buffer *out) {
-        struct acpi_object_list input;
-        union acpi_object params[3];
-        acpi_status status = AE_OK;
-        
-        /* WMI calling convention:
-         *  _SB.WMID.WMxx( instance, methodId, input_buffer )
-         *    - instance is always 1, since there's only this module
-         *    - methodId is the method number within the current method group.
-         *    - Input buffer is ignored for read-only commands
-         *    - Returns a buffer of results
-         */
-        input.count = 3;
-        input.pointer = params;
-        params[0].type = ACPI_TYPE_INTEGER;
-        params[0].integer.value = 0x01;
-        params[1].type = ACPI_TYPE_INTEGER;
-        params[1].integer.value = methodId;
-        params[2].type = ACPI_TYPE_BUFFER;
-        params[2].buffer.length = in->length;
-        params[2].buffer.pointer = in->pointer;
-        
-        DEBUG(2, "Doing %s( 1, %u, [%llu-byte buffer] )\n", WMID_METHOD, methodId, in->length);
-        
-        status = acpi_evaluate_object(NULL, WMID_METHOD, &input, out);
-        
-        return status;
-}
-
-static acpi_status
 WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
 {       
-        struct acpi_buffer input = { (acpi_size)sizeof(uint32_t), (void*)(&in) };
-        struct acpi_buffer result = { ACPI_ALLOCATE_BUFFER, NULL };
-        union acpi_object *obj;
+	struct acpi_buffer input = { (acpi_size)sizeof(uint32_t), (void*)(&in) };
+	struct acpi_buffer result = { ACPI_ALLOCATE_BUFFER, NULL };
+	union acpi_object *obj;
 	uint32_t tmp;
-        acpi_status status;
+	acpi_status status;
 
-        status = WMI_execute(methodId, &input, &result);
-        DEBUG(2, "  Execution status: %d\n", status);
-        DEBUG(2, "  In: 0x%08x\n", in);
+	status = WMI_execute(WMID_METHOD, methodId, &input, &result);
+	DEBUG(2, "  In: 0x%08x\n", in);
 
-        if (ACPI_FAILURE(status))
-                return status;
+	if (ACPI_FAILURE(status))
+		return status;
 
 	obj = (union acpi_object *)result.pointer;
 	if (obj && obj->type == ACPI_TYPE_BUFFER && obj->buffer.length == sizeof(uint32_t)) {
@@ -493,10 +482,10 @@ WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
 	if (out)
 		*out = tmp;
 
-        if (result.length > 0 && result.pointer)
-                kfree(result.pointer);
+	if (result.length > 0 && result.pointer)
+		kfree(result.pointer);
 
-        return status;
+	return status;
 }
 
 static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface) {
@@ -522,7 +511,7 @@ static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface) {
 	}
 	status = WMI_execute_uint32(methodId, 0, &result);
 
-        if (ACPI_SUCCESS(status))
+	if (ACPI_SUCCESS(status))
 		*value = (uint8_t)result;
 
 	return status;
