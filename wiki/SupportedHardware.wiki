@@ -4,11 +4,11 @@
 = Supported Hardware =
 == Introduction ==
 
-To summarise: the driver only supports those laptops that present a WMI interface that can be manipulated via ACPI. So, any laptop that doesn't provide this interface, or any of the older Dritek type laptops are not supported (for the latter, use acerhk). Laptops using the newer WMI interface are not yet supported.
+To summarise: the driver only supports those laptops that present a WMI-ACPI interface, that can be manipulated via ACPI. So, any laptop that doesn't provide this interface, or any of the older Dritek type laptops are not supported (for the latter, use acerhk).
 
 acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Siemens laptop uses this interface as well.
 
-Unfortunately, it is not possible to tell by the hardware alone what models require acer_acpi - different models use different chipsets (ATi and nVidia have both been seen). The chances are, if you need to install LaunchManager (or similar) on Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
+Unfortunately, it is not possible to tell by the hardware alone which series require acer_acpi - different series use different chipsets (ATi and nVidia have both been seen). The chances are, if you need to install LaunchManager (or similar) on Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
 
 If you discover your hardware is supported by acer_acpi and it is not listed here, please send a dump of /proc/acpi/dsdt to me (cathectic(@)gmail.com), also listing the make and model of your laptop.
 
@@ -40,6 +40,7 @@ Legend:
   * 5050 series [c,d,2]
   * 5100 series [c,d,2]
   * 5560 series [c,d,1] (Wireless is a hardware switch, not controlled by acer_acpi)
+  * 5570 series [u,dw,2]
   * 5580 series [c,d,2]
   * 5650 series [c,d,2]
   * 6510 series [c,d,2]
