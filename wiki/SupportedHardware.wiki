@@ -47,6 +47,9 @@ Legend:
   * 9300 series [u,dw,1]
   * 9420 series [c,d,1] (Wireless is a hardware switch, not controlled by acer_acpi)
 
+====Extensa====
+  * 4010 series [c,d,2]
+
 ====Travelmate====
   * 3620 series [c,d,2]
   * 4400 series [c,d,1]
