@@ -42,8 +42,8 @@ Legend:
   * 5560 series [c,d,1] (Wireless is a hardware switch, not controlled by acer_acpi)
   * 5570 series [c,d,2]
   * 5580 series [c,d,2]
+  * 5610 series [c,d,2]
   * 5650 series [c,d,2]
-  * 6510 series [c,d,2]
   * 9300 series [u,dw,1]
   * 9420 series [c,d,1] (Wireless is a hardware switch, not controlled by acer_acpi)
 
