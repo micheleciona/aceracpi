@@ -8697,6 +8697,9 @@ DefinitionBlock ("5580.aml", "DSDT", 2, "INTEL ", "CALISTGA", 0x06040000)
                     Return (BUFF)
                 }
 
+                /*
+                 * Control EC device
+                 */
                 Method (WMBA, 3, NotSerialized)
                 {
                     If (LLess (Arg1, 0x04))

@@ -3371,6 +3371,8 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                 Device (EC0)
                 {
                     Name (_HID, EisaId ("PNP0C09"))
+
+                    // Define that the EC SCI is bit 3 of the GP_STS register
                     Name (_GPE, 0x03)
 
                     /*
@@ -3382,7 +3384,7 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                         Return (0x0F)
                     }
 
-                    Name (_CRS, ResourceTemplate ()
+                    Name (_CRS, ResourceTemplate () // Port 0x62 and 0x66
                     {
                         IO (Decode16,
                             0x0062,             // Range Minimum
@@ -3500,8 +3502,7 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                     }
 
                     /*
-                     * Embedded Controller Query and 
-                     * SMBus Alarm control method
+                     * Triggered by Fn + F1 (?)
                      */
                     Method (_Q16, 0, NotSerialized)
                     {
@@ -3510,8 +3511,7 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                     }
 
                     /*
-                     * Embedded Controller Query and 
-                     * SMBus Alarm control method
+                     * Triggered by Fn + F2 (Acer V)
                      */
                     Method (_Q24, 0, NotSerialized)
                     {
@@ -3520,8 +3520,7 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                     }
 
                     /*
-                     * Embedded Controller Query and 
-                     * SMBus Alarm control method
+                     * Triggered by Fn + F3 (Acer Power Management)
                      */
                     Method (_Q25, 0, NotSerialized)
                     {
@@ -3530,8 +3529,7 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                     }
 
                     /*
-                     * Embedded Controller Query and 
-                     * SMBus Alarm control method
+                     * Triggered by Fn + F4 (Suspend)
                      */
                     Method (_Q17, 0, NotSerialized)
                     {
@@ -3540,8 +3538,8 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                     }
 
                     /*
-                     * Embedded Controller Query and 
-                     * SMBus Alarm control method
+                     * Triggered by Fn + F5 (Acer display switch?)
+                     * Also calls AMW0's _WED and WMAB
                      */
                     Method (_Q19, 0, NotSerialized)
                     {
@@ -3632,8 +3630,7 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                     }
 
                     /*
-                     * Embedded Controller Query and 
-                     * SMBus Alarm control method
+                     * Triggered by wireless button
                      */
                     Method (_Q10, 0, NotSerialized)
                     {
@@ -3652,8 +3649,7 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                     }
 
                     /*
-                     * Embedded Controller Query and 
-                     * SMBus Alarm control method
+                     * Triggered by Mail LED button
                      */
                     Method (_Q12, 0, NotSerialized)
                     {
@@ -3692,8 +3688,7 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                     }
 
                     /*
-                     * Embedded Controller Query and 
-                     * SMBus Alarm control method
+                     * Triggered by bluetooth button
                      */
                     Method (_Q23, 0, NotSerialized)
                     {
@@ -6064,10 +6059,10 @@ DefinitionBlock ("dsdt.aml", "DSDT", 1, "ATI", "SB400", 0x06040000)
                     {
                         Return (Package (0x04)
                         {
-                            0x0100, 
-                            0x0210, 
-                            0x0200, 
-                            0x0110
+                            0x0100, /* CRT */
+                            0x0210, /* DVI */
+                            0x0200, /* TV */
+                            0x0110  /* Panel */
                         })
                     }
 
