@@ -1,5 +1,6 @@
-200?-??-?? Version 0.6
-	Cleaned up code in line with kernel coding conventions
+2007-07-06 Version 0.6
+	Cleaned up code
+	Added WMID support
 	Makefile no longer gives harmless errors on older 2.6 kernels
 
 2007-05-05 Version 0.5
