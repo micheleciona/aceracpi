@@ -51,6 +51,7 @@ Legend:
   * 4010 series [c,d,2]
 
 ====Travelmate====
+  * 2490 series [c,d,2]
   * 3620 series [c,d,2]
   * 4400 series [c,d,1]
 
