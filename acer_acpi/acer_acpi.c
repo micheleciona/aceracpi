@@ -58,6 +58,14 @@ MODULE_AUTHOR("Mark Smith");
 MODULE_DESCRIPTION("Acer Laptop ACPI Extras Driver");
 MODULE_LICENSE("GPL");
 
+/*
+ * Defining this enables the 3g interface on the new WMID interface.
+ *
+ * However, there are many reports of this not working (and no reports of it
+ * working), so this is for experienced users only.
+ */
+#undef EXPERIMENTAL_INTERFACES
+
 #define MY_LOGPREFIX "acer_acpi: "
 #define MY_ERR KERN_ERR MY_LOGPREFIX
 #define MY_NOTICE KERN_NOTICE MY_LOGPREFIX
@@ -70,7 +78,7 @@ MODULE_LICENSE("GPL");
 
 /*
  * On the 5580, brightness values range from 0x0 to 0xf, inclusive.
- * This may vary on other machines.
+ * This may vary on other machines or other interfaces.
  */
 #define ACER_MAX_BRIGHTNESS 0xf
 
@@ -284,12 +292,12 @@ WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, s
 	params[2].buffer.length = in->length;
 	params[2].buffer.pointer = in->pointer;
 
-	DEBUG(2, "Doing %s( 1, %u, [%llu-byte buffer] )\n", methodPath, methodId, in->length);
+	DEBUG(2, "Doing %s( 1, %u, [%llu-byte buffer] )\n", methodPath, methodId, (uint64_t)in->length);
 
 	status = acpi_evaluate_object(NULL, methodPath, &input, out);
 
 	DEBUG(2, "  Execution status: %d\n", status);
-	DEBUG(2, "  Result: %llu bytes\n", out ? out->length : 0 );
+	DEBUG(2, "  Result: %llu bytes\n", (uint64_t)(out ? out->length : 0) );
 
 	return status;
 }
@@ -529,6 +537,7 @@ static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface) {
 			break;
 		case ACER_CAP_BLUETOOTH:
 			methodId = ACER_WMID_SET_BLUETOOTH_METHODID;
+			break;
 		case ACER_CAP_THREEG:
 			methodId = ACER_WMID_SET_THREEG_METHODID;
 			break;
@@ -541,10 +550,12 @@ static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface) {
 
 static Interface WMID_interface = {
 	.capability = (
-		ACER_CAP_WIRELESS |
-		ACER_CAP_BLUETOOTH |
-		ACER_CAP_BRIGHTNESS |
-		ACER_CAP_THREEG
+		ACER_CAP_WIRELESS
+		| ACER_CAP_BRIGHTNESS
+		| ACER_CAP_BLUETOOTH
+#ifdef EXPERIMENTAL_INTERFACES
+		| ACER_CAP_THREEG
+#endif
 	),
 	.get_bool = get_bool_via_u8,
 	.set_bool = set_bool_via_u8,
