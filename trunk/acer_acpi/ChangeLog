@@ -1,11 +1,16 @@
-2007-??-??	Version 0.6
+2007-07-06	Version 0.6
 
 * Ran code through lindent (Kernel coding style)
 
-* Simplified write_{feature} method calls
+* Deprecated "enabled : X" - "X" will now just work
 
-* Patched Makefile to stop complaining on kernels 2.6.17
-  (Thanks to Subbu)
+* Patched Makefile to stop complaining on kernels <= 2.6.17
+  (thanks to Subbu)
+
+* Added support for new "WMID" interface (thanks to Jim Ramsay)
+
+* Rewrote backend code for all interfaces and /proc (thanks to
+  Jim Ramsay)
 
 2007-05-05	Version 0.5
 
