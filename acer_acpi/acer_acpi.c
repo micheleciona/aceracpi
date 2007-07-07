@@ -187,11 +187,6 @@ typedef struct _ProcItem {
 	unsigned int capability;
 } ProcItem;
 
-struct acer_hotk {
-	struct acpi_device *device;
-	acpi_handle handle;
-};
-
 static struct proc_dir_entry *acer_proc_dir;
 
 static int is_valid_acpi_path(const char *methodName)
@@ -800,7 +795,7 @@ static acpi_status __exit remove_proc_entries(void)
 	return AE_OK;
 }
 
-static struct acpi_driver acpi_acerkeys = {
+static struct acpi_driver acer = {
 	.name = "acer_acpi",
 	.class = "hotkey",
 	.ids = "PNP0C14",
@@ -859,12 +854,12 @@ static int __init acer_acpi_init(void)
 	}
 
 	/*
-	 * Register the hotkeys driver
+	 * Register the driver
 	 *
 	 * TODO: Does this do anything?  Can we use the bus detection code to
 	 *       check for the interface or all or part of the method ID path?
 	 */
-	status = acpi_bus_register_driver(&acpi_acerkeys);
+	status = acpi_bus_register_driver(&acer);
 	if (ACPI_FAILURE(status)) {
 		printk(MY_ERR "Unable to register driver, aborting.\n");
 		goto error_acpi_bus_register;
@@ -890,7 +885,7 @@ error_no_interface:
 
 static void __exit acer_acpi_exit(void)
 {
-	acpi_bus_unregister_driver(&acpi_acerkeys);
+	acpi_bus_unregister_driver(&acer);
 
 	remove_proc_entries();
 
