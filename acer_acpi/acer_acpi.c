@@ -797,7 +797,7 @@ static acpi_status __exit remove_proc_entries(void)
 
 static struct acpi_driver acer = {
 	.name = "acer_acpi",
-	.class = "hotkey",
+	.class = "acer",
 	.ids = "PNP0C14",
 	.ops = {},
 };
@@ -856,8 +856,8 @@ static int __init acer_acpi_init(void)
 	/*
 	 * Register the driver
 	 *
-	 * TODO: Does this do anything?  Can we use the bus detection code to
-	 *       check for the interface or all or part of the method ID path?
+	 * TODO: Can we use the bus detection code to check for the interface
+	 *       or all or part of the method ID path?
 	 */
 	status = acpi_bus_register_driver(&acer);
 	if (ACPI_FAILURE(status)) {
