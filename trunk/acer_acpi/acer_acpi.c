@@ -28,7 +28,7 @@
  *  John Belmonte - the Toshiba ACPI driver I've adapted for this module.
  *  Julien Lerouge & Karol Kozimor - ASUS Acpi driver authors.
  *  Olaf Tauber - developer of acerhk, the inspiration to solve the 64-bit
- *                driver problem for my Aspire 5024.
+ *                driver problem for [Mark Smith's] Aspire 5024.
  *  Mathieu Segaud - solved the ACPI problem that needed a double-modprobe
  *                   in version 0.2 and below.
  *  Carlos Corbacho - added initial status support for wireless/ mail/
@@ -39,7 +39,7 @@
  *
  */
 
-#define ACER_ACPI_VERSION	"0.6"
+#define ACER_ACPI_VERSION	"0.7"
 #define PROC_INTERFACE_VERSION	1
 #define PROC_ACER		"acer"
 
@@ -50,11 +50,12 @@
 #include <linux/proc_fs.h>
 #include <linux/delay.h>
 #include <linux/suspend.h>
+#include <linux/platform_device.h>
 #include <asm/uaccess.h>
 
 #include <acpi/acpi_drivers.h>
 
-MODULE_AUTHOR("Mark Smith");
+MODULE_AUTHOR("Mark Smith, Carlos Corbacho");
 MODULE_DESCRIPTION("Acer Laptop ACPI Extras Driver");
 MODULE_LICENSE("GPL");
 
@@ -179,15 +180,6 @@ MODULE_PARM_DESC(mailled, "Set initial state of Mail LED");
 MODULE_PARM_DESC(brightness, "Set initial LCD backlight brightness");
 MODULE_PARM_DESC(threeg, "Set initial state of 3G hardware");
 MODULE_PARM_DESC(debug, "Debugging verbosity level (0=least 2=most)");
-
-typedef struct _ProcItem {
-	const char *name;
-	char *(*read_func) (char *, uint32_t);
-	unsigned long (*write_func) (const char *, unsigned long, uint32_t);
-	unsigned int capability;
-} ProcItem;
-
-static struct proc_dir_entry *acer_proc_dir;
 
 static int is_valid_acpi_path(const char *methodName)
 {
@@ -549,58 +541,6 @@ static Interface WMID_interface = {
 };
 
 /*
- * High-level Procfs file handlers 
- */
-
-static int
-dispatch_read(char *page, char **start, off_t off, int count, int *eof,
-	      ProcItem * item)
-{
-	char *p = page;
-	int len;
-
-	if (off == 0)
-		p = item->read_func(p, item->capability);
-
-	/*
-	 * ISSUE: I don't understand this code 
-	 */
-	len = (p - page);
-	if (len <= off + count)
-		*eof = 1;
-	*start = page + off;
-	len -= off;
-	if (len > count)
-		len = count;
-	if (len < 0)
-		len = 0;
-	return len;
-}
-
-static int
-dispatch_write(struct file *file, const char __user * buffer,
-	       unsigned long count, ProcItem * item)
-{
-	int result;
-	char *tmp_buffer;
-
-	/*
-	 * Arg buffer points to userspace memory, which can't be accessed
-	 * directly.  Since we're making a copy, zero-terminate the
-	 * destination so that sscanf can be used on it safely. 
-	 */
-	tmp_buffer = kmalloc(count + 1, GFP_KERNEL);
-	if (copy_from_user(tmp_buffer, buffer, count)) {
-		result = -EFAULT;
-	} else {
-		tmp_buffer[count] = 0;
-		result = item->write_func(tmp_buffer, count, item->capability);
-	}
-	kfree(tmp_buffer);
-	return result;
-}
-
-/*
  * Generic Device (interface-independent)
  */
 
@@ -626,7 +566,6 @@ static acpi_status set_bool(int value, uint32_t cap) {
 			status = interface->set_bool(value == 1, cap, interface);
 	}
 	return status;
-
 }
 
 static acpi_status get_u8(uint8_t *value, uint32_t cap) {
@@ -676,130 +615,161 @@ static void acpi_commandline_init(void)
 }
 
 /*
- * Procfs interface
+ * FIXME - sysfs interface
  */
-static char *read_bool(char *p, uint32_t cap)
-{
-	bool result;
-	acpi_status status = get_bool(&result, cap);
-	if (ACPI_SUCCESS(status))
-		p += sprintf(p, "%d\n", result);
-	else
-		p += sprintf(p, "Read error" );
-	return p;
-}
 
-static unsigned long write_bool(const char *buffer, unsigned long count, uint32_t cap)
-{
-	int value;
+#define show_set_bool(value, cap)					\
+static ssize_t								\
+show_bool_##value(struct device *dev, struct device_attribute *attr,	\
+	char *buf)	\
+{									\
+	bool result;							\
+	acpi_status status = get_bool(&result, cap);			\
+	if (ACPI_SUCCESS(status))					\
+		return sprintf(buf, "%d\n", result);			\
+	return sprintf(buf, "Read error" );				\
+}									\
+									\
+static ssize_t								\
+set_bool_##value(struct device *dev, struct device_attribute *attr,	\
+	const char *buf,						\
+	size_t count)							\
+{									\
+	bool tmp = simple_strtoul(buf, NULL, 10);			\
+	acpi_status status = set_bool(tmp, cap); 			\
+		if (ACPI_FAILURE(status))				\
+			return -EINVAL;					\
+   	return count;							\
+}									\
+static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, 			\
+	show_bool_##value, set_bool_##value);
 
-	/*
-	 * For now, we are still supporting the "enabled: %i" - this _will_ be deprecated in 0.7
-	 */
-	if ((sscanf(buffer, " enabled : %i", &value) == 1
-				|| sscanf(buffer, "%i", &value) == 1)) {
-		acpi_status status = set_bool(value, cap);
-		if (ACPI_FAILURE(status))
-			return -EINVAL;
-	} else {
-		return -EINVAL;
-	}
-	return count;
-}
+show_set_bool(wireless, ACER_CAP_WIRELESS);
+show_set_bool(bluetooth, ACER_CAP_BLUETOOTH);
+show_set_bool(threeg, ACER_CAP_THREEG);
+show_set_bool(mailled, ACER_CAP_MAILLED);
 
-static char *read_u8(char *p, uint32_t cap)
-{
-	uint8_t result;
-	acpi_status status = get_u8(&result, cap);
-	if (ACPI_SUCCESS(status))
-		p += sprintf(p, "%u\n", result);
-	else
-		p += sprintf(p, "Read error" );
-	return p;
-}
+#define show_set_u8(value, cap)						\
+static ssize_t								\
+show_u8_##value(struct device *dev, struct device_attribute *attr, 	\
+	char *buf)							\
+{									\
+        uint8_t result;							\
+	acpi_status status = get_u8(&result, cap);			\
+	if (ACPI_SUCCESS(status))					\
+		return sprintf(buf, "%u\n", result);			\
+	return sprintf(buf, "Read error" );				\
+}									\
+									\
+static ssize_t								\
+set_u8_##value(struct device *dev, struct device_attribute *attr,	\
+	const char *buf,						\
+	size_t count)							\
+{									\
+	int tmp = simple_strtoul(buf, NULL, 10);			\
+	acpi_status status = (*set_##value)(tmp);			\
+		if (ACPI_FAILURE(status))				\
+			return -EINVAL;					\
+	return count;							\
+}									\
+static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, show_u8_##value,	\
+	set_u8_##value);
 
-static unsigned long write_u8(const char *buffer, unsigned long count, uint32_t cap)
-{
-	int value;
-	acpi_status (*set_method)(uint8_t);
+show_set_u8(brightness, ACER_CAP_BRIGHTNESS);
 
-	/* Choose the appropriate set_u8 wrapper here, based on the capability */
-	switch (cap) {
-		case ACER_CAP_BRIGHTNESS:
-			set_method = set_brightness;
-			break;
-		default:
-			return -EINVAL;
-	};
+/*
+ * Platform device
+ */
 
-	if (sscanf(buffer, "%i", &value) == 1) {
-		acpi_status status = (*set_method)(value);
-		if (ACPI_FAILURE(status))
-			return -EINVAL;
-	} else {
-		return -EINVAL;
-	}
-	return count;
-}
-
-static char *read_version(char *p, uint32_t cap)
-{
-	p += sprintf(p, "driver:                  %s\n", ACER_ACPI_VERSION);
-	p += sprintf(p, "proc_interface:          %d\n",
-			PROC_INTERFACE_VERSION);
-	return p;
-}
-
-ProcItem proc_items[] = {
-	{"mailled", read_bool, write_bool, ACER_CAP_MAILLED},
-	{"bluetooth", read_bool, write_bool, ACER_CAP_BLUETOOTH},
-	{"wireless", read_bool, write_bool, ACER_CAP_WIRELESS},
-	{"brightness", read_u8, write_u8, ACER_CAP_BRIGHTNESS},
-	{"threeg", read_bool, write_bool, ACER_CAP_THREEG},
-	{"version", read_version, NULL, ACER_CAP_ANY},
-	{NULL}
+static struct platform_driver acer_platform_driver = {
+	.driver = {
+		.name = "acer-laptop",
+		.owner = THIS_MODULE,
+		}
 };
 
-static acpi_status __init add_proc_entries(void)
+static struct platform_device *acer_platform_device;
+
+static int remove_sysfs(struct platform_device *device)
 {
-	struct proc_dir_entry *proc;
-	ProcItem *item;
-
-	for (item = proc_items; item->name; ++item) {
-		/* 
-		 * Only add the proc file if the current interface actually
-		 * supports it
-		 */
-		if (interface->capability & item->capability) {
-			proc = create_proc_read_entry(item->name,
-					S_IFREG | S_IRUGO | S_IWUSR,
-					acer_proc_dir,
-					(read_proc_t *) dispatch_read,
-					item);
-			if (proc)
-				proc->owner = THIS_MODULE;
-			if (proc && item->write_func)
-				proc->write_proc = (write_proc_t *) dispatch_write;
-		}
-	}
-
-	return AE_OK;
+	device_remove_file(&device->dev, &dev_attr_wireless);
+	device_remove_file(&device->dev, &dev_attr_bluetooth);
+	device_remove_file(&device->dev, &dev_attr_mailled);
+	device_remove_file(&device->dev, &dev_attr_threeg);
+	device_remove_file(&device->dev, &dev_attr_brightness);
+	return 0;
 }
 
-static acpi_status __exit remove_proc_entries(void)
+static int acer_platform_add(void)
 {
-	ProcItem *item;
+	int retval = -ENOMEM;
+	platform_driver_register(&acer_platform_driver);
 
-	for (item = proc_items; item->name; ++item)
-		remove_proc_entry(item->name, acer_proc_dir);
-	return AE_OK;
+	acer_platform_device = platform_device_alloc("acer-laptop", -1);
+
+	platform_device_add(acer_platform_device);
+
+	DEBUG(1, "Registering platform device\n");
+
+	retval = device_create_file(&acer_platform_device->dev, &dev_attr_wireless);
+	if (retval)
+		goto error;
+	retval = device_create_file(&acer_platform_device->dev, &dev_attr_bluetooth);
+	if (retval)
+		goto error;
+	retval = device_create_file(&acer_platform_device->dev, &dev_attr_mailled);
+	if (retval)
+		goto error;
+	retval = device_create_file(&acer_platform_device->dev, &dev_attr_threeg);
+	if (retval)
+		goto error;
+	retval = device_create_file(&acer_platform_device->dev, &dev_attr_brightness);
+	if (retval)
+		goto error;
+	
+	return 0;
+
+	error:
+		remove_sysfs(acer_platform_device);
+	return retval;
 }
 
-static struct acpi_driver acer = {
+static void acer_platform_remove(void)
+{
+	remove_sysfs(acer_platform_device);
+	platform_device_del(acer_platform_device);
+	platform_driver_unregister(&acer_platform_driver);
+}
+
+static int acer_acpi_add(struct acpi_device *device)
+{
+	acer_platform_add();
+	printk(MY_ERR "Is this actually being called\n");
+	return 0;
+}
+
+static int acer_acpi_remove(struct acpi_device *device, int type)
+{
+	acer_platform_remove();
+	printk(MY_INFO "Successfully removed\n");
+	
+	return 0;
+}
+
+static int acer_acpi_resume(struct acpi_device *device)
+{
+	return 0;
+}
+
+static struct acpi_driver acer_acpi_driver = {
 	.name = "acer_acpi",
 	.class = "acer",
-	.ids = "PNP0C14",
-	.ops = {},
+	.ids = "pnp0c14",
+	.ops = {
+		.add = acer_acpi_add,
+		.remove = acer_acpi_remove,
+		.resume = acer_acpi_resume,
+		},
 };
 
 static int __init acer_acpi_init(void)
@@ -839,45 +809,25 @@ static int __init acer_acpi_init(void)
 		}
 	}
 
-	/* Create the proc entries */
-	acer_proc_dir = proc_mkdir(PROC_ACER, acpi_root_dir);
-	if (!acer_proc_dir) {
-		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
-		goto error_proc_mkdir;
-	}
-
-	acer_proc_dir->owner = THIS_MODULE;
-	status = add_proc_entries();
-	if (ACPI_FAILURE(status)) {
-		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
-		goto error_proc_add;
-	}
-
 	/*
 	 * Register the driver
 	 *
 	 * TODO: Can we use the bus detection code to check for the interface
 	 *       or all or part of the method ID path?
 	 */
-	status = acpi_bus_register_driver(&acer);
+	status = acpi_bus_register_driver(&acer_acpi_driver);
 	if (ACPI_FAILURE(status)) {
 		printk(MY_ERR "Unable to register driver, aborting.\n");
 		goto error_acpi_bus_register;
 	}
+	printk(MY_INFO "Driver registered.\n");
 
 	/* Finally, override any initial settings with values from the commandline */
 	acpi_commandline_init();
 
-	return 0;
+	return status;
 
-error_acpi_bus_register:
-	remove_proc_entries();
-error_proc_add:
-	if (acer_proc_dir)
-		remove_proc_entry(PROC_ACER, acpi_root_dir);
-error_proc_mkdir:
-	if (interface->free)
-		interface->free(interface);
+error_acpi_bus_register: /* FIXME */
 error_interface_init:
 error_no_interface:
 	return -ENODEV;
@@ -885,12 +835,7 @@ error_no_interface:
 
 static void __exit acer_acpi_exit(void)
 {
-	acpi_bus_unregister_driver(&acer);
-
-	remove_proc_entries();
-
-	if (acer_proc_dir)
-		remove_proc_entry(PROC_ACER, acpi_root_dir);
+	acpi_bus_unregister_driver(&acer_acpi_driver);
 
 	if (interface->free)
 		interface->free(interface);
