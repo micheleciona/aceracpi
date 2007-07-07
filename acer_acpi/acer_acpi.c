@@ -717,6 +717,7 @@ static struct led_classdev mail_led = {
 
 static void acer_led_init(struct device *dev)
 {
+	printk(MY_INFO "Loading LED driver\n");
 	led_classdev_register(dev, &mail_led);
 }
 
@@ -785,8 +786,9 @@ static void acer_platform_remove(void)
 static int acer_acpi_add(struct acpi_device *device)
 {
 	acer_platform_add();
-	acer_led_init(device->handle);
-	acer_backlight_init(device->handle);
+	acer_led_init(acpi_get_physical_device(device->handle));
+	/*acer_backlight_init(device->handle);*/
+	printk(MY_INFO "Finished loading all subsystems\n");
 	return 0;
 }
 
