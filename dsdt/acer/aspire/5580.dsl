@@ -7376,6 +7376,10 @@ DefinitionBlock ("5580.aml", "DSDT", 2, "INTEL ", "CALISTGA", 0x06040000)
         }
 
         Mutex (PSMX, 0x00)
+
+        /*
+         * EC read/ write method (?)
+         */
         Method (PHSR, 2, NotSerialized)
         {
             Acquire (\_SB.PSMX, 0xFFFF)
@@ -8063,6 +8067,10 @@ DefinitionBlock ("5580.aml", "DSDT", 2, "INTEL ", "CALISTGA", 0x06040000)
                 {
                     0x01
                 })
+
+                /*
+                 * Read/ write EC (for WMID devices)
+                 */
                 Method (PHSR, 2, NotSerialized)
                 {
                     Acquire (\_SB.PSMX, 0xFFFF)
@@ -8081,24 +8089,37 @@ DefinitionBlock ("5580.aml", "DSDT", 2, "INTEL ", "CALISTGA", 0x06040000)
                     Store (0x00, AS03)
                 }
 
+                /* 
+                 * Return current value for wireless, bluetooth or brightness
+                 */
                 Method (Z006, 1, NotSerialized)
                 {
                     While (One)
                     {
                         Name (_T_0, 0x00)
                         Store (Arg0, _T_0)
+
+                        /*
+                         * Return wireless status
+                         */
                         If (LEqual (_T_0, 0x01))
                         {
                             Store (\_SB.WMID.PHSR (0x01, 0x00), BUFF)
                         }
                         Else
                         {
+                           /*
+                            * Return bluetooth status
+                            */
                             If (LEqual (_T_0, 0x02))
                             {
                                 Store (\_SB.WMID.PHSR (0x01, 0x01), BUFF)
                             }
                             Else
                             {
+                               /*
+                                * Return brightness status
+                                */
                                 If (LEqual (_T_0, 0x03))
                                 {
                                     Store (\_SB.WMID.PHSR (0x01, 0x02), BUFF)
@@ -8130,6 +8151,10 @@ DefinitionBlock ("5580.aml", "DSDT", 2, "INTEL ", "CALISTGA", 0x06040000)
                     {
                         Name (_T_0, 0x00)
                         Store (Arg0, _T_0)
+
+                        /*
+                         * Set wireless
+                         */
                         If (LEqual (_T_0, 0x04))
                         {
                             Or (Local0, 0x10, Local0)
@@ -8137,6 +8162,9 @@ DefinitionBlock ("5580.aml", "DSDT", 2, "INTEL ", "CALISTGA", 0x06040000)
                         }
                         Else
                         {
+                            /*
+                             * Set bluetooth
+                             */
                             If (LEqual (_T_0, 0x05))
                             {
                                 Or (Local0, 0x20, Local0)
@@ -8144,6 +8172,9 @@ DefinitionBlock ("5580.aml", "DSDT", 2, "INTEL ", "CALISTGA", 0x06040000)
                             }
                             Else
                             {
+                                /*
+                                 * Set brightness
+                                 */
                                 If (LEqual (_T_0, 0x06))
                                 {
                                     Or (BF00, 0x40, Local0)
@@ -8702,12 +8733,18 @@ DefinitionBlock ("5580.aml", "DSDT", 2, "INTEL ", "CALISTGA", 0x06040000)
                  */
                 Method (WMBA, 3, NotSerialized)
                 {
+                    /*
+                     * Get current values for wireless, bluetooth or brightness 
+                     */
                     If (LLess (Arg1, 0x04))
                     {
                         Z006 (Arg1)
                     }
                     Else
                     {
+                        /*
+                         * Notify ACPI that WMI consumer program has launched
+                         */
                         If (LEqual (Arg1, 0x07))
                         {
                             Store (Arg2, BUFF)
@@ -8722,6 +8759,9 @@ DefinitionBlock ("5580.aml", "DSDT", 2, "INTEL ", "CALISTGA", 0x06040000)
 
                             Store (0x00, BUFF)
                         }
+                        /*
+                         * Everything else (ODD, security, get/set 3G)
+                         */
                         Else
                         {
                             Z007 (Arg1, Arg2)
