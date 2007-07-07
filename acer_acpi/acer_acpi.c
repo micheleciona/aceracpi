@@ -646,7 +646,9 @@ static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, 			\
 
 show_set_bool(wireless, ACER_CAP_WIRELESS);
 show_set_bool(bluetooth, ACER_CAP_BLUETOOTH);
+#ifdef EXPERIMENTAL_INTERFACES
 show_set_bool(threeg, ACER_CAP_THREEG);
+#endif
 show_set_bool(mailled, ACER_CAP_MAILLED);
 
 #define show_set_u8(value, cap)						\
@@ -695,7 +697,9 @@ static int remove_sysfs(struct platform_device *device)
 	device_remove_file(&device->dev, &dev_attr_wireless);
 	device_remove_file(&device->dev, &dev_attr_bluetooth);
 	device_remove_file(&device->dev, &dev_attr_mailled);
+#ifdef EXPERIMENTAL_INTERFACES
 	device_remove_file(&device->dev, &dev_attr_threeg);
+#endif
 	device_remove_file(&device->dev, &dev_attr_brightness);
 	return 0;
 }
@@ -709,8 +713,6 @@ static int acer_platform_add(void)
 
 	platform_device_add(acer_platform_device);
 
-	DEBUG(1, "Registering platform device\n");
-
 	retval = device_create_file(&acer_platform_device->dev, &dev_attr_wireless);
 	if (retval)
 		goto error;
@@ -720,9 +722,11 @@ static int acer_platform_add(void)
 	retval = device_create_file(&acer_platform_device->dev, &dev_attr_mailled);
 	if (retval)
 		goto error;
+#ifdef EXPERIMENTAL_INTERFACES
 	retval = device_create_file(&acer_platform_device->dev, &dev_attr_threeg);
 	if (retval)
 		goto error;
+#endif
 	retval = device_create_file(&acer_platform_device->dev, &dev_attr_brightness);
 	if (retval)
 		goto error;
@@ -744,27 +748,26 @@ static void acer_platform_remove(void)
 static int acer_acpi_add(struct acpi_device *device)
 {
 	acer_platform_add();
-	printk(MY_ERR "Is this actually being called\n");
 	return 0;
 }
 
 static int acer_acpi_remove(struct acpi_device *device, int type)
 {
 	acer_platform_remove();
-	printk(MY_INFO "Successfully removed\n");
-	
 	return 0;
 }
 
 static int acer_acpi_resume(struct acpi_device *device)
 {
+	/* AMW0 fix - reset all devices, otherwise we have meaningless values */
+	interface->init(interface);
 	return 0;
 }
 
 static struct acpi_driver acer_acpi_driver = {
 	.name = "acer_acpi",
 	.class = "acer",
-	.ids = "pnp0c14",
+	.ids = "PNP0C14",
 	.ops = {
 		.add = acer_acpi_add,
 		.remove = acer_acpi_remove,
@@ -792,6 +795,8 @@ static int __init acer_acpi_init(void)
 	if (is_valid_acpi_path(AMW0_METHOD)) {
 		DEBUG(0, "Detected ACER AMW0 interface\n");
 		interface = &AMW0_interface;
+		/* .ids is case sensitive - and AMW0 uses a spec-breaking case */
+		acer_acpi_driver.ids = "pnp0c14";
 	} else if (is_valid_acpi_path(WMID_METHOD)) {
 		DEBUG(0, "Detected ACER WMID interface\n");
 		interface = &WMID_interface;
