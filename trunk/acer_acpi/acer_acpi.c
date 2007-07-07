@@ -333,22 +333,11 @@ static acpi_status WMAB_execute(WMAB_args * regbuf, struct acpi_buffer *result)
 }
 
 static acpi_status AMW0_init(Interface *iface) {
-	WMAB_args args;
-	acpi_status status;
 	AMW0_Data *data;
 
 	/* Allocate our private data structure */
 	iface->data = kmalloc(sizeof(AMW0_Data), GFP_KERNEL);
 	data = (AMW0_Data*)iface->data;
-
-	/* 
-	 * Call the interface once so the BIOS knows it's to notify us of
-	 * events via PNP0C14
-	 */
-	memset(&args, 0, sizeof(WMAB_args));
-	args.eax = ACER_WRITE;
-	args.ebx = 0;
-	status = WMAB_execute(&args, NULL);
 
 	/* 
 	 * If the commandline doesn't specify these, we need to force them to
@@ -367,7 +356,7 @@ static acpi_status AMW0_init(Interface *iface) {
 	 */
 	data->wireless = data->mailled = data->bluetooth = -1;
 
-	return status;
+	return AE_OK;
 }
 
 static void AMW0_free(Interface *iface) {
@@ -811,72 +800,11 @@ static acpi_status __exit remove_proc_entries(void)
 	return AE_OK;
 }
 
-/*
- * TODO: make this actually do useful stuff, if we ever see events 
- */
-static void acer_acerkeys_notify(acpi_handle handle, u32 event, void *data)
-{
-	struct acer_hotk *hotk = (struct acer_hotk *)data;
-
-	if (!hotk)
-		return;
-	printk(MY_ERR "Got an event!! %X", event);
-
-	return;
-}
-
-static int acpi_acerkeys_add(struct acpi_device *device)
-{
-	struct acer_hotk *hotk = NULL;
-	acpi_status status = AE_OK;
-
-	if (!device)
-		return -EINVAL;
-
-	hotk =
-		(struct acer_hotk *)kmalloc(sizeof(struct acer_hotk), GFP_KERNEL);
-	if (!hotk)
-		return -ENOMEM;
-	memset(hotk, 0, sizeof(struct acer_hotk));
-	hotk->handle = device->handle;
-	strcpy(acpi_device_name(device), "Acer Laptop ACPI Extras");
-	strcpy(acpi_device_class(device), "hkey");
-	acpi_driver_data(device) = hotk;
-	hotk->device = device;
-
-	status = acpi_install_notify_handler(hotk->handle, ACPI_SYSTEM_NOTIFY,
-			acer_acerkeys_notify, hotk);
-	if (ACPI_FAILURE(status))
-		printk(MY_ERR "Error installing notify handler.\n");
-	return 0;
-}
-
-static int acpi_acerkeys_remove(struct acpi_device *device, int type)
-{
-	acpi_status status = 0;
-	struct acer_hotk *hotk = NULL;
-
-	if (!device || !acpi_driver_data(device))
-		return -EINVAL;
-	hotk = (struct acer_hotk *)acpi_driver_data(device);
-
-	status = acpi_remove_notify_handler(hotk->handle, ACPI_SYSTEM_NOTIFY,
-			acer_acerkeys_notify);
-	if (ACPI_FAILURE(status))
-		printk(MY_ERR "Error removing notify handler.\n");
-	kfree(hotk);
-
-	return 0;
-}
-
 static struct acpi_driver acpi_acerkeys = {
 	.name = "acer_acpi",
 	.class = "hotkey",
 	.ids = "PNP0C14",
-	.ops = {
-		.add = acpi_acerkeys_add,
-		.remove = acpi_acerkeys_remove,
-	},
+	.ops = {},
 };
 
 static int __init acer_acpi_init(void)
