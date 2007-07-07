@@ -47,10 +47,11 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/types.h>
-#include <linux/proc_fs.h>
 #include <linux/delay.h>
 #include <linux/suspend.h>
+#include <linux/backlight.h>
 #include <linux/platform_device.h>
+#include <linux/leds.h>
 #include <asm/uaccess.h>
 
 #include <acpi/acpi_drivers.h>
@@ -592,12 +593,6 @@ static acpi_status set_u8(uint8_t value, uint8_t min, uint8_t max, uint32_t cap)
 	return status;
 }
 
-/* Each _u8 needs a small wrapper that sets the boundary values */
-static acpi_status set_brightness(uint8_t value)
-{
-	return set_u8(value, 0, ACER_MAX_BRIGHTNESS, ACER_CAP_BRIGHTNESS);
-}
-
 static void acpi_commandline_init(void)
 {
 	DEBUG(1, "Commandline args: mailled(%d) wireless(%d) bluetooth(%d) brightness(%d)\n",
@@ -611,7 +606,7 @@ static void acpi_commandline_init(void)
 	set_bool(wireless, ACER_CAP_WIRELESS);
 	set_bool(bluetooth, ACER_CAP_BLUETOOTH);
 	set_bool(threeg, ACER_CAP_THREEG);
-	set_brightness((uint8_t)brightness);
+	/*set_brightness((uint8_t)brightness);*/
 }
 
 /*
@@ -649,40 +644,90 @@ show_set_bool(bluetooth, ACER_CAP_BLUETOOTH);
 #ifdef EXPERIMENTAL_INTERFACES
 show_set_bool(threeg, ACER_CAP_THREEG);
 #endif
-show_set_bool(mailled, ACER_CAP_MAILLED);
 
-#define show_set_u8(value, cap)						\
-static ssize_t								\
-show_u8_##value(struct device *dev, struct device_attribute *attr, 	\
-	char *buf)							\
-{									\
-        uint8_t result;							\
-	acpi_status status = get_u8(&result, cap);			\
-	if (ACPI_SUCCESS(status))					\
-		return sprintf(buf, "%u\n", result);			\
-	return sprintf(buf, "Read error" );				\
-}									\
-									\
-static ssize_t								\
-set_u8_##value(struct device *dev, struct device_attribute *attr,	\
-	const char *buf,						\
-	size_t count)							\
-{									\
-	int tmp = simple_strtoul(buf, NULL, 10);			\
-	acpi_status status = (*set_##value)(tmp);			\
-		if (ACPI_FAILURE(status))				\
-			return -EINVAL;					\
-	return count;							\
-}									\
-static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, show_u8_##value,	\
-	set_u8_##value);
+/*
+ * Backlight device (UNTESTED!)
+ */
+static struct backlight_device *acer_backlight_device;
 
-show_set_u8(brightness, ACER_CAP_BRIGHTNESS);
+static int read_brightness(struct backlight_device *bd)
+{
+	uint8_t value;
+	get_u8(&value, ACER_CAP_BRIGHTNESS);
+	return value;
+}
+
+static int set_brightness(struct backlight_device *bd, int value)
+{
+	set_u8(value, 0, ACER_MAX_BRIGHTNESS, ACER_CAP_BRIGHTNESS);
+	return 0;
+}
+
+static int update_bl_status(struct backlight_device *bd)
+{
+	int rv;
+	int value = bd->props.brightness;
+
+	rv = set_brightness(bd, value);
+	if (rv)
+		return rv;
+
+	return 0;
+}
+
+static struct backlight_ops acer_backlight_ops = {
+	.get_brightness = read_brightness,
+	.update_status = update_bl_status,
+};
+
+static int acer_backlight_init(struct device *dev)
+{
+	struct backlight_device *bd;
+
+	bd = backlight_device_register("acer-laptop", dev,
+				       NULL, &acer_backlight_ops);
+	if (IS_ERR(bd)) {
+		printk(MY_ERR
+		       "Could not register Acer backlight device\n");
+		acer_backlight_device = NULL;
+		return PTR_ERR(bd);
+	}
+
+	acer_backlight_device = bd;
+
+	bd->props.max_brightness = ACER_MAX_BRIGHTNESS;
+	bd->props.brightness = read_brightness(NULL);
+	backlight_update_status(bd);
+	return 0;
+}
+
+/*
+ * LED device (Mail LED only, since no other LEDs yet)
+ */
+static void mail_led_set(struct led_classdev *led_cdev, enum led_brightness value)
+{
+	bool tmp = value;
+	set_bool(tmp, ACER_CAP_MAILLED);
+}
+
+static struct led_classdev mail_led = {
+	.name = "acer:mail",
+	.brightness_set = mail_led_set,
+};
+
+static void acer_led_init(struct device *dev)
+{
+	led_classdev_register(dev, &mail_led);
+}
+
+static void acer_led_exit(void)
+{
+	led_classdev_unregister(&mail_led);
+}
 
 /*
  * Platform device
  */
-
 static struct platform_driver acer_platform_driver = {
 	.driver = {
 		.name = "acer-laptop",
@@ -696,11 +741,9 @@ static int remove_sysfs(struct platform_device *device)
 {
 	device_remove_file(&device->dev, &dev_attr_wireless);
 	device_remove_file(&device->dev, &dev_attr_bluetooth);
-	device_remove_file(&device->dev, &dev_attr_mailled);
 #ifdef EXPERIMENTAL_INTERFACES
 	device_remove_file(&device->dev, &dev_attr_threeg);
 #endif
-	device_remove_file(&device->dev, &dev_attr_brightness);
 	return 0;
 }
 
@@ -719,17 +762,11 @@ static int acer_platform_add(void)
 	retval = device_create_file(&acer_platform_device->dev, &dev_attr_bluetooth);
 	if (retval)
 		goto error;
-	retval = device_create_file(&acer_platform_device->dev, &dev_attr_mailled);
-	if (retval)
-		goto error;
 #ifdef EXPERIMENTAL_INTERFACES
 	retval = device_create_file(&acer_platform_device->dev, &dev_attr_threeg);
 	if (retval)
 		goto error;
 #endif
-	retval = device_create_file(&acer_platform_device->dev, &dev_attr_brightness);
-	if (retval)
-		goto error;
 	
 	return 0;
 
@@ -748,12 +785,15 @@ static void acer_platform_remove(void)
 static int acer_acpi_add(struct acpi_device *device)
 {
 	acer_platform_add();
+	acer_led_init(device->handle);
+	acer_backlight_init(device->handle);
 	return 0;
 }
 
 static int acer_acpi_remove(struct acpi_device *device, int type)
 {
 	acer_platform_remove();
+	acer_led_exit();
 	return 0;
 }
 
