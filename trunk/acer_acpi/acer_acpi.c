@@ -237,6 +237,14 @@ static Interface *interface;
  * General interface convenience methods
  */
 
+static bool has_cap(uint32_t cap)
+{
+	if ((interface->capability & cap) != 0) {
+		return 1;
+	}
+	return 0;
+}
+
 /* These *_via_u8 use the interface's *_u8 methods to emulate other gets/sets */
 static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface) {
 	acpi_status status;
@@ -606,17 +614,17 @@ static void acpi_commandline_init(void)
 	set_bool(wireless, ACER_CAP_WIRELESS);
 	set_bool(bluetooth, ACER_CAP_BLUETOOTH);
 	set_bool(threeg, ACER_CAP_THREEG);
-	/*set_brightness((uint8_t)brightness);*/
+	/*set_brightness((uint8_t)brightness); - FIXME*/
 }
 
 /*
- * FIXME - sysfs interface
+ * sysfs interface
  */
 
 #define show_set_bool(value, cap)					\
 static ssize_t								\
 show_bool_##value(struct device *dev, struct device_attribute *attr,	\
-	char *buf)	\
+	char *buf)							\
 {									\
 	bool result;							\
 	acpi_status status = get_bool(&result, cap);			\
@@ -684,6 +692,7 @@ static int acer_backlight_init(struct device *dev)
 {
 	struct backlight_device *bd;
 
+	DEBUG(1, "Loading backlight driver\n");
 	bd = backlight_device_register("acer-laptop", dev,
 				       NULL, &acer_backlight_ops);
 	if (IS_ERR(bd)) {
@@ -701,8 +710,13 @@ static int acer_backlight_init(struct device *dev)
 	return 0;
 }
 
+static void acer_backlight_exit(void)
+{
+	backlight_device_unregister(acer_backlight_device);
+}
+
 /*
- * LED device (Mail LED only, since no other LEDs yet)
+ * LED device (Mail LED only, no other LEDs known yet)
  */
 static void mail_led_set(struct led_classdev *led_cdev, enum led_brightness value)
 {
@@ -717,7 +731,7 @@ static struct led_classdev mail_led = {
 
 static void acer_led_init(struct device *dev)
 {
-	printk(MY_INFO "Loading LED driver\n");
+	DEBUG(1, "Loading LED driver\n");
 	led_classdev_register(dev, &mail_led);
 }
 
@@ -783,19 +797,26 @@ static void acer_platform_remove(void)
 	platform_driver_unregister(&acer_platform_driver);
 }
 
+/*
+ * ACPI driver
+ */
 static int acer_acpi_add(struct acpi_device *device)
 {
 	acer_platform_add();
-	acer_led_init(acpi_get_physical_device(device->handle));
-	/*acer_backlight_init(device->handle);*/
-	printk(MY_INFO "Finished loading all subsystems\n");
+	if (has_cap(ACER_CAP_MAILLED))
+		acer_led_init(acpi_get_physical_device(device->handle));
+	if (has_cap(ACER_CAP_BRIGHTNESS))
+		acer_backlight_init(acpi_get_physical_device(device->handle));
 	return 0;
 }
 
 static int acer_acpi_remove(struct acpi_device *device, int type)
 {
 	acer_platform_remove();
-	acer_led_exit();
+	if (has_cap(ACER_CAP_MAILLED))
+		acer_led_exit();
+	if (has_cap(ACER_CAP_BRIGHTNESS))
+		acer_backlight_exit();
 	return 0;
 }
 
@@ -867,14 +888,13 @@ static int __init acer_acpi_init(void)
 		printk(MY_ERR "Unable to register driver, aborting.\n");
 		goto error_acpi_bus_register;
 	}
-	printk(MY_INFO "Driver registered.\n");
 
 	/* Finally, override any initial settings with values from the commandline */
 	acpi_commandline_init();
 
 	return status;
 
-error_acpi_bus_register: /* FIXME */
+error_acpi_bus_register:
 error_interface_init:
 error_no_interface:
 	return -ENODEV;
