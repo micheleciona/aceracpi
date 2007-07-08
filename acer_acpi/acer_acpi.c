@@ -822,6 +822,8 @@ static int __init acer_acpi_init(void)
 	if (is_valid_acpi_path(AMW0_METHOD)) {
 		DEBUG(0, "Detected ACER AMW0 interface\n");
 		interface = &AMW0_interface;
+		/* .ids is case sensitive - and AMW0 uses a strange mixed case */
+		acer_acpi_driver.ids = "pnp0c14";
 	} else if (is_valid_acpi_path(WMID_METHOD)) {
 		DEBUG(0, "Detected ACER WMID interface\n");
 		interface = &WMID_interface;
