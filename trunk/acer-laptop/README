@@ -1,0 +1,130 @@
+This is acer-laptop version 0.1
+
+### THIS IS VERY MUCH A WORK IN PROGRESS.  NO WARRANTY GIVEN.  IF YOU
+### BREAK YOUR LAPTOP USING THIS DRIVER, YOU GET TO KEEP THE PIECES AND
+### I WILL ACCEPT ABSOLUTELY NO RESPONSIBILITY.
+
+acer-laptop was derived from the original acer_acpi - acer_acpi has been 
+modified to use sysfs and move various devices to specific subsystems. Because
+of the work involved, it has been decided to fork this work as acer-laptop (in
+line with other in-kernel drivers) and work on submitting this upstream 
+(acer_acpi will be kept around for reference).
+
+acer_acpi was a driver to allow you to control various aspects of your Acer
+laptop hardware using the proc filesystem.  It was originally developed in
+order to activate the wireless LAN card under a 64-bit version of Linux,
+as acerhk[1] (the previous fine solution to the problem) relied on making BIOS
+calls which are not allowed from a 64-bit OS.
+
+Please read the INSTALL file for installation instructions.
+
+acer-laptop is maintained by Carlos Corbacho <cathectic@gmail.com>
+
+[1] acerhk: http://www.cakey.de/acerhk/
+
+Usage
+*****
+
+As root, modprobe acer-laptop
+
+(To enable debugging, add debug=X, where X is between 0 and 2).
+
+acer-laptop creates entries under /sys/devices/platform/acer-laptop, which 
+enables you to control some of the following (varies between models):
+
+* the wireless LAN card
+* inbuilt Bluetooth adapter
+
+The syntax for each is the same:
+
+To enable the wireless, bluetooth or threeg features:
+echo 1 > /proc/acpi/acer/{feature}
+
+To disable the wireless, bluetooth or threeg features:
+echo 0 > /proc/acpi/acer/{feature}
+
+The mail LED is integrated into the kernels LED subsystem, so can be found in:
+
+/sys/class/leds
+
+and is acer:mail
+
+The brightness of the LCD panel is integrated into the backlight subsystem, can
+can be found in:
+
+/sys/class/backlight/acer-laptop
+
+To enable a feature on loading the module:
+modprobe acer_acpi {feature}=1
+
+To disable a feature on loading the module (default):
+modprobe acer_acpi {feature}=0
+
+Where {feature} is either wireless, bluetooth, 3G, or mailled. (You can have 
+multiple {feature}'s specified on the modprobe line).
+
+For WMID laptops with a "brightness" option, you can write a value between 0 to
+15 (or 0x0 to 0xF).
+
+To enable support for 3G devices on WMID, you will need to edit acer_acpi.c and 
+replace:
+
+#undef EXPERIMENTAL_INTERFACES
+
+with
+
+#define EXPERIMENTAL_INTERFACES
+
+(If you have the hardware to test this with, please report back the results)
+
+Notes
+*****
+
+The behaviour of the wireless LED will depend on your hardware and driver
+combination.
+
+e.g. With the BCM4318 on the 5020 series:
+
+ndiswrapper: Light blinks on when transmitting
+bcm43xx/ 
+bcm43xx_mac80211: Solid light, blinks off when transmitting
+
+Also, acer_acpi does not yet have any means of deciding whether to
+enable or disable entries in /proc/acpi/acer - this means that for
+hardware that isn't there, you can still read/ write the corresponding proc
+file.
+
+So: Just because it _says_ Bluetooth in /proc/acpi/acer, doesn't mean you now 
+actually have a Bluetooth device.
+
+Also: We do not store the status of the device when you hibernate. On AMW0,
+this will cause incorrect values to be returned from sysfs (this is a known
+issue and is being worked on).
+
+Credits
+*******
+
+Olaf Tauber, who did the real hard work when he developed acerhk
+http://www.informatik.hu-berlin.de/~tauber/acerhk
+All the authors of laptop acpi modules in the kernel, whose work
+was an inspiration and a source of good code, particularly the authors
+of asus-laptop and sony-laptop
+Mathieu Segaud, who solved the problem with having to modprobe the driver
+twice in version 0.2 and below.
+Jim Ramsay, who added support for the new WMID interface
+
+Contact
+*******
+
+If you have problems with the driver, please file a bug on the website and
+include the following information:
+1. name of your laptop (e.g. Acer Aspire 5021)
+2. contents of your ACPI DSDT (this will require acpidump).  I can disassemble
+   it if necessary, so I'll accept the binaries.
+
+Please check http://code.google.com/p/aceracpi/wiki/SupportedHardware first to
+see if your hardware is supported or unsupported.
+
+The latest version of acer-laptop can be found here:
+
+http://code.google.com/p/aceracpi
