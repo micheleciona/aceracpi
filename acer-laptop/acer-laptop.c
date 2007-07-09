@@ -70,14 +70,14 @@ MODULE_LICENSE("GPL");
  */
 #undef EXPERIMENTAL_INTERFACES
 
-#define MY_LOGPREFIX "acer_acpi: "
-#define MY_ERR KERN_ERR MY_LOGPREFIX
-#define MY_NOTICE KERN_NOTICE MY_LOGPREFIX
-#define MY_INFO KERN_INFO MY_LOGPREFIX
+#define ACER_LOGPREFIX "acer-laptop: "
+#define ACER_ERR KERN_ERR ACER_LOGPREFIX
+#define ACER_NOTICE KERN_NOTICE ACER_LOGPREFIX
+#define ACER_INFO KERN_INFO ACER_LOGPREFIX
 
 #define DEBUG(level, message...) { \
 	if (debug >= level) \
-		printk(KERN_DEBUG MY_LOGPREFIX message);\
+		printk(KERN_DEBUG ACER_LOGPREFIX message);\
 }
 
 /*
@@ -726,7 +726,7 @@ static int acer_backlight_init(struct device *dev)
 	bd = backlight_device_register("acer-laptop", dev,
 				       NULL, &acer_backlight_ops);
 	if (IS_ERR(bd)) {
-		printk(MY_ERR
+		printk(ACER_ERR
 		       "Could not register Acer backlight device\n");
 		acer_backlight_device = NULL;
 		return PTR_ERR(bd);
@@ -894,10 +894,10 @@ static int __init acer_acpi_init(void)
 {
 	acpi_status status = AE_OK;
 
-	printk(MY_INFO "Acer Laptop ACPI Extras version %s\n",
+	printk(ACER_INFO "Acer Laptop ACPI Extras version %s\n",
 			ACER_LAPTOP_VERSION);
 	if (acpi_disabled) {
-		printk(MY_ERR "ACPI Disabled, unable to load.\n");
+		printk(ACER_ERR "ACPI Disabled, unable to load.\n");
 		return -ENODEV;
 	}
 
@@ -916,7 +916,7 @@ static int __init acer_acpi_init(void)
 		DEBUG(0, "Detected ACER WMID interface\n");
 		interface = &WMID_interface;
 	} else {
-		printk(MY_ERR "No or unsupported WMI interface, unable to load.\n");
+		printk(ACER_ERR "No or unsupported WMI interface, unable to load.\n");
 		goto error_no_interface;
 	}
 
@@ -924,7 +924,7 @@ static int __init acer_acpi_init(void)
 	if (interface->init) {
 		status = interface->init(interface);
 		if (ACPI_FAILURE(status)) {
-			printk(MY_ERR "Interface initialization failed.\n");
+			printk(ACER_ERR "Interface initialization failed.\n");
 			goto error_interface_init;
 		}
 	}
@@ -937,7 +937,7 @@ static int __init acer_acpi_init(void)
 	 */
 	status = acpi_bus_register_driver(&acer_acpi_driver);
 	if (ACPI_FAILURE(status)) {
-		printk(MY_ERR "Unable to register driver, aborting.\n");
+		printk(ACER_ERR "Unable to register driver, aborting.\n");
 		goto error_acpi_bus_register;
 	}
 
@@ -959,7 +959,7 @@ static void __exit acer_acpi_exit(void)
 	if (interface->free)
 		interface->free(interface);
 
-	printk(MY_INFO "Acer Laptop ACPI Extras unloaded\n");
+	printk(ACER_INFO "Acer Laptop ACPI Extras unloaded\n");
 	return;
 }
 
