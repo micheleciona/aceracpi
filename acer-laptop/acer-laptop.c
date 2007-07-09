@@ -679,12 +679,18 @@ rfkill_toggle(threeg, ACER_CAP_THREEG);
 
 #define add_rfkill_device(value, type, cap) \
 	switch_##value = rfkill_allocate(dev, RFKILL_TYPE_##type);\
-	switch_##value->name = "##value"; \
-	switch_##value->toggle_radio = *toggle_device_##value; \
-	rfkill_register(switch_##value);
+	if (switch_##value) {\
+		switch_##value->name = "##value"; \
+		get_bool(&result,cap); \
+		switch_##value->state = result; \
+		switch_##value->toggle_radio = *toggle_device_##value; \
+		rfkill_register(switch_##value); \
+	}
 
 static void acer_rfkill_add(struct device *dev)
 {
+	bool result;
+
 	if (has_cap(ACER_CAP_WIRELESS))
 		add_rfkill_device(wireless, WLAN, ACER_CAP_WIRELESS);
 	if (has_cap(ACER_CAP_BLUETOOTH))
@@ -695,14 +701,14 @@ static void acer_rfkill_add(struct device *dev)
 	#endif
 }
 
-static void acer_rfkill_remove()
+static void acer_rfkill_remove(void)
 {
-	if (has_cap(ACER_CAP_WIRELESS))
+	if (has_cap(ACER_CAP_WIRELESS) && switch_wireless)
 		rfkill_unregister(switch_wireless);
-	if (has_cap(ACER_CAP_BLUETOOTH))
+	if (has_cap(ACER_CAP_BLUETOOTH) && switch_bluetooth)
 		rfkill_unregister(switch_bluetooth);
 	#ifdef EXPERIMENTAL_INTERFACES
-	if (has_cap(ACER_CAP_THREEG))
+	if (has_cap(ACER_CAP_THREEG) && switch_threeg)
 		rfkill_unregister(switch_threeg);
 	#endif
 }
