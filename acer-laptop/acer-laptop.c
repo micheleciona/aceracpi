@@ -679,9 +679,33 @@ rfkill_toggle(threeg, ACER_CAP_THREEG);
 
 #define add_rfkill_device(value, type, cap) \
 	switch_##value = rfkill_allocate(dev, RFKILL_TYPE_##type);\
-	switch_##value->name = "##name"; \
+	switch_##value->name = "##value"; \
 	switch_##value->toggle_radio = *toggle_device_##value; \
 	rfkill_register(switch_##value);
+
+static void acer_rfkill_add(struct device *dev)
+{
+	if (has_cap(ACER_CAP_WIRELESS))
+		add_rfkill_device(wireless, WLAN, ACER_CAP_WIRELESS);
+	if (has_cap(ACER_CAP_BLUETOOTH))
+		add_rfkill_device(bluetooth, BLUETOOTH, ACER_CAP_BLUETOOTH);
+	#ifdef EXPERIMENTAL_INTERFACES
+	if (has_cap(ACER_CAP_THREEG))
+		add_rfkill_device(threeg, WLAN, ACER_CAP_THREEG);
+	#endif
+}
+
+static void acer_rfkill_remove()
+{
+	if (has_cap(ACER_CAP_WIRELESS))
+		rfkill_unregister(switch_wireless);
+	if (has_cap(ACER_CAP_BLUETOOTH))
+		rfkill_unregister(switch_bluetooth);
+	#ifdef EXPERIMENTAL_INTERFACES
+	if (has_cap(ACER_CAP_THREEG))
+		rfkill_unregister(switch_threeg);
+	#endif
+}
 
 /*
  * Backlight device (UNTESTED!)
@@ -835,14 +859,9 @@ static int acer_acpi_add(struct acpi_device *device)
 	/*acer_platform_add();*/
 
 	struct device *dev = acpi_get_physical_device(device->handle);
-	if (has_cap(ACER_CAP_WIRELESS))
-		add_rfkill_device(wireless, WLAN, ACER_CAP_WIRELESS);
-	if (has_cap(ACER_CAP_BLUETOOTH))
-		add_rfkill_device(bluetooth, BLUETOOTH, ACER_CAP_BLUETOOTH);
-	#ifdef EXPERIMENTAL_INTERFACES
-	if (has_cap(ACER_CAP_THREEG))
-		add_rfkill_device(threeg, WLAN, ACER_CAP_THREEG);
-	#endif
+
+	acer_rfkill_add(dev);
+
 	if (has_cap(ACER_CAP_MAILLED))
 		acer_led_init(dev);
 	if (has_cap(ACER_CAP_BRIGHTNESS))
@@ -853,14 +872,7 @@ static int acer_acpi_add(struct acpi_device *device)
 static int acer_acpi_remove(struct acpi_device *device, int type)
 {
 	/*acer_platform_remove();*/
-	if (has_cap(ACER_CAP_WIRELESS))
-		rfkill_unregister(switch_wireless);
-	if (has_cap(ACER_CAP_BLUETOOTH))
-		rfkill_unregister(switch_bluetooth);
-	#ifdef EXPERIMENTAL_INTERFACES
-	if (has_cap(ACER_CAP_THREEG))
-		rfkill_unregister(switch_threeg);
-	#endif
+	acer_rfkill_remove();
 	if (has_cap(ACER_CAP_MAILLED))
 		acer_led_exit();
 	if (has_cap(ACER_CAP_BRIGHTNESS))
