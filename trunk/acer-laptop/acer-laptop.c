@@ -566,13 +566,6 @@ static acpi_status set_bool(int value, uint32_t cap) {
 	acpi_status status = AE_BAD_PARAMETER;
 	if ((value == 0 || value == 1) &&
 			(interface->capability & cap)) {
-		if (interface->get_bool) {
-			/* If possible, only set if the value has changed */
-			bool actual;
-			status = interface->get_bool(&actual, cap, interface);
-			if (ACPI_SUCCESS(status) && actual == (bool)value)
-				return status;
-		}
 		if (interface->set_bool) 
 			status = interface->set_bool(value == 1, cap, interface);
 	}
