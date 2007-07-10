@@ -39,10 +39,7 @@
  *                acer_acpi 0.2 and below.
  *  Jim Ramsay
  *              - Figured out and added support for WMID interface
- *
  */
-
-#define ACER_LAPTOP_VERSION	"0.1"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -53,7 +50,6 @@
 #include <linux/backlight.h>
 #include <linux/platform_device.h>
 #include <linux/leds.h>
-#include <linux/rfkill.h>
 #include <asm/uaccess.h>
 
 #include <acpi/acpi_drivers.h>
@@ -87,15 +83,14 @@ MODULE_LICENSE("GPL");
 #define ACER_MAX_BRIGHTNESS 0xf
 
 /*
- * Magic Number -
- * Meaning is unknown - this number is required for writing to ACPI
+ * AMW0 EC Magic Number
+ * This number is required for writing to ACPI
  * (it's also used in acerhk when directly accessing the EC)
  */
 #define ACER_WRITE	0x9610
 
 /*
  * Bit masks for the old AMW0 interface
- * These could vary between the particular interface
  */
 #define ACER_AMW0_WIRELESS_MASK  0x35
 #define ACER_AMW0_BLUETOOTH_MASK 0x34
@@ -137,17 +132,15 @@ MODULE_LICENSE("GPL");
 
 /*
  * Presumed start states -
- * For the old-style interfaces, there is no way to know for certain what the start state
- * is for any of the parameters (ACPI does not provide any methods or store this
- * anywhere). We therefore start with an unknown state (this is also how acerhk
- * does it); we then change the status so that we are in a known state (I
- * suspect LaunchManager on Windows does something similar, since the  wireless
- * appears to turn off as soon as it launches).
+ * For the AMW0 interface, there is no way to know for certain what the start
+ * state is for any of the parameters (ACPI does not provide any methods or store
+ * this anywhere). We therefore start with an unknown state and then change
+ * so that we are in a known state (we suspect Acer does something similar).
  *
- * Plus, we can't tell which features are enabled or disabled on a specific
+ * Plus, we can't yet tell which features are enabled or disabled on a specific
  * model, just ranges - e.g. The 5020 series can _support_ bluetooth; but the
  * 5021 has no bluetooth, whilst the 5024 does.  However, the BIOS identifies
- * both laptops as 5020 - we can't tell them apart!
+ * both laptops as 5020 - we cannot tell them apart!
  *
  * Basically the code works like this:
  *   - On init, any values specified on the commandline are set.
@@ -207,7 +200,7 @@ typedef struct _Interface {
 	 * Initializes an interface, should allocate the interface-specific
 	 * data
 	 */
-	acpi_status (*init) (struct _Interface*);
+	void (*init) (struct _Interface*);
 
 	/*
 	 * Frees an interface, should free the interface-specific data
@@ -248,7 +241,8 @@ static bool has_cap(uint32_t cap)
 }
 
 /* These *_via_u8 use the interface's *_u8 methods to emulate other gets/sets */
-static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface) {
+static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface)
+{
 	acpi_status status;
 	uint8_t result;
 
@@ -260,7 +254,8 @@ static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface) 
 	return status;
 }
 
-static acpi_status set_bool_via_u8(bool value, uint32_t cap, Interface *iface) {
+static acpi_status set_bool_via_u8(bool value, uint32_t cap, Interface *iface)
+{
 	uint8_t v = value ? 1 : 0;
 
 	return iface->set_u8(v, cap, iface);
@@ -268,7 +263,8 @@ static acpi_status set_bool_via_u8(bool value, uint32_t cap, Interface *iface) {
 
 /* General wrapper around the ACPI call */
 static acpi_status
-WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, struct acpi_buffer *out) {
+WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, struct acpi_buffer *out)
+{
 	struct acpi_object_list input;
 	union acpi_object params[3];
 	acpi_status status = AE_OK;
@@ -300,7 +296,6 @@ WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, s
 	return status;
 }
 
-
 /*
  * Old interface (now known as the AMW0 interface)
  */
@@ -330,7 +325,8 @@ static acpi_status WMAB_execute(WMAB_args * regbuf, struct acpi_buffer *result)
 	return status;
 }
 
-static acpi_status AMW0_init(Interface *iface) {
+static void AMW0_init(Interface *iface)
+{
 	AMW0_Data *data;
 
 	/* Allocate our private data structure */
@@ -353,11 +349,10 @@ static acpi_status AMW0_init(Interface *iface) {
 	 * acer_commandline_init will definitely set them.
 	 */
 	data->wireless = data->mailled = data->bluetooth = -1;
-
-	return AE_OK;
 }
 
-static void AMW0_free(Interface *iface) {
+static void AMW0_free(Interface *iface)
+{
 	/* Free our private data structure */
 	kfree(iface->data);
 }
@@ -448,7 +443,7 @@ static Interface AMW0_interface = {
 
 static acpi_status
 WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
-{       
+{
 	struct acpi_buffer input = { (acpi_size)sizeof(uint32_t), (void*)(&in) };
 	struct acpi_buffer result = { ACPI_ALLOCATE_BUFFER, NULL };
 	union acpi_object *obj;
@@ -483,7 +478,8 @@ WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
 	return status;
 }
 
-static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface) {
+static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface)
+{
 	acpi_status status;
 	uint32_t result;
 	uint32_t methodId = 0;
@@ -512,7 +508,8 @@ static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface) {
 	return status;
 }
 
-static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface) {
+static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface)
+{
 	uint32_t methodId = 0;
 
 	switch (cap) {
@@ -555,14 +552,16 @@ static Interface WMID_interface = {
  * Generic Device (interface-independent)
  */
 
-static acpi_status get_bool(bool *value, uint32_t cap) {
+static acpi_status get_bool(bool *value, uint32_t cap)
+{
 	acpi_status status = AE_BAD_ADDRESS;
 	if (interface->get_bool)
 		status = interface->get_bool(value, cap, interface);
 	return status;
 }
 
-static acpi_status set_bool(int value, uint32_t cap) {
+static acpi_status set_bool(int value, uint32_t cap)
+{
 	acpi_status status = AE_BAD_PARAMETER;
 	if ((value == 0 || value == 1) &&
 			(interface->capability & cap)) {
@@ -572,14 +571,16 @@ static acpi_status set_bool(int value, uint32_t cap) {
 	return status;
 }
 
-static acpi_status get_u8(uint8_t *value, uint32_t cap) {
+static acpi_status get_u8(uint8_t *value, uint32_t cap)
+{
 	acpi_status status = AE_BAD_ADDRESS;
 	if (interface->get_u8)
 		status = interface->get_u8(value, cap, interface);
 	return status;
 }
 
-static acpi_status set_u8(uint8_t value, uint8_t min, uint8_t max, uint32_t cap) {
+static acpi_status set_u8(uint8_t value, uint8_t min, uint8_t max, uint32_t cap)
+{
 	acpi_status status = AE_BAD_PARAMETER;
 	if ((value >= min && value <= max) &&
 			(interface->capability & cap) ) {
@@ -596,6 +597,12 @@ static acpi_status set_u8(uint8_t value, uint8_t min, uint8_t max, uint32_t cap)
 	return status;
 }
 
+/* Each _u8 needs a small wrapper that sets the boundary values */
+static acpi_status set_brightness(uint8_t value) 
+{
+	return set_u8(value, 0, ACER_MAX_BRIGHTNESS, ACER_CAP_BRIGHTNESS);
+}
+
 static void acpi_commandline_init(void)
 {
 	DEBUG(1, "Commandline args: mailled(%d) wireless(%d) bluetooth(%d) brightness(%d)\n",
@@ -609,7 +616,7 @@ static void acpi_commandline_init(void)
 	set_bool(wireless, ACER_CAP_WIRELESS);
 	set_bool(bluetooth, ACER_CAP_BLUETOOTH);
 	set_bool(threeg, ACER_CAP_THREEG);
-	/*set_brightness((uint8_t)brightness); - FIXME*/
+	set_brightness((uint8_t)brightness);
 }
 
 /*
@@ -649,68 +656,6 @@ show_set_bool(threeg, ACER_CAP_THREEG);
 #endif
 
 /*
- * rfkill devices
- */
-static struct rfkill *switch_wireless;
-static struct rfkill *switch_bluetooth;
-#ifdef EXPERIMENTAL_INTERFACES
-static struct rfkill *switch_threeg;
-#endif
-
-#define rfkill_toggle(value, cap) \
-static int toggle_device_##value(void *data, enum rfkill_state state) \
-{\
-	set_bool(state, cap);\
-	return 0;\
-}\
-
-rfkill_toggle(wireless, ACER_CAP_WIRELESS);
-rfkill_toggle(bluetooth, ACER_CAP_BLUETOOTH);
-#ifdef EXPERIMENTAL_INTERFACES
-rfkill_toggle(threeg, ACER_CAP_THREEG);
-#endif
-
-#define add_rfkill_device(value, type, cap) \
-	switch_##value = rfkill_allocate(dev, RFKILL_TYPE_##type);\
-	if (switch_##value) {\
-		switch_##value->name = #value;\
-		get_bool(&result,cap); \
-		switch_##value->state = result; \
-		switch_##value->toggle_radio = *toggle_device_##value; \
-		status = rfkill_register(switch_##value); \
-		if (status) {\
-			DEBUG(0, "Error registering rfkill device\n");\
-		}\
-	}
-
-static void acer_rfkill_add(struct device *dev)
-{
-	bool result;
-	int status;
-
-	if (has_cap(ACER_CAP_WIRELESS))
-		add_rfkill_device(wireless, WLAN, ACER_CAP_WIRELESS);
-	if (has_cap(ACER_CAP_BLUETOOTH))
-		add_rfkill_device(bluetooth, BLUETOOTH, ACER_CAP_BLUETOOTH);
-	#ifdef EXPERIMENTAL_INTERFACES
-	if (has_cap(ACER_CAP_THREEG))
-		add_rfkill_device(threeg, WLAN, ACER_CAP_THREEG);
-	#endif
-}
-
-static void acer_rfkill_remove(void)
-{
-	if (has_cap(ACER_CAP_WIRELESS) && switch_wireless)
-		rfkill_unregister(switch_wireless);
-	if (has_cap(ACER_CAP_BLUETOOTH) && switch_bluetooth)
-		rfkill_unregister(switch_bluetooth);
-	#ifdef EXPERIMENTAL_INTERFACES
-	if (has_cap(ACER_CAP_THREEG) && switch_threeg)
-		rfkill_unregister(switch_threeg);
-	#endif
-}
-
-/*
  * Backlight device (UNTESTED!)
  */
 static struct backlight_device *acer_backlight_device;
@@ -722,22 +667,17 @@ static int read_brightness(struct backlight_device *bd)
 	return value;
 }
 
-static int set_brightness(struct backlight_device *bd, int value)
+static int set_backlight(struct backlight_device *bd, int value)
 {
-	set_u8(value, 0, ACER_MAX_BRIGHTNESS, ACER_CAP_BRIGHTNESS);
+	set_brightness(value);
 	return 0;
 }
 
 static int update_bl_status(struct backlight_device *bd)
 {
-	int rv;
 	int value = bd->props.brightness;
 
-	rv = set_brightness(bd, value);
-	if (rv)
-		return rv;
-
-	return 0;
+	return set_backlight(bd, value);
 }
 
 static struct backlight_ops acer_backlight_ops = {
@@ -811,10 +751,13 @@ static struct platform_device *acer_platform_device;
 
 static int remove_sysfs(struct platform_device *device)
 {
-	device_remove_file(&device->dev, &dev_attr_wireless);
-	device_remove_file(&device->dev, &dev_attr_bluetooth);
+	if (has_cap(ACER_CAP_WIRELESS))
+		device_remove_file(&device->dev, &dev_attr_wireless);
+	if (has_cap(ACER_CAP_BLUETOOTH))
+		device_remove_file(&device->dev, &dev_attr_bluetooth);
 #ifdef EXPERIMENTAL_INTERFACES
-	device_remove_file(&device->dev, &dev_attr_threeg);
+	if (has_cap(ACER_CAP_THREEG))
+		device_remove_file(&device->dev, &dev_attr_threeg);
 #endif
 	return 0;
 }
@@ -828,16 +771,22 @@ static int acer_platform_add(void)
 
 	platform_device_add(acer_platform_device);
 
-	retval = device_create_file(&acer_platform_device->dev, &dev_attr_wireless);
-	if (retval)
-		goto error;
-	retval = device_create_file(&acer_platform_device->dev, &dev_attr_bluetooth);
-	if (retval)
-		goto error;
+	if (has_cap(ACER_CAP_WIRELESS)) {
+		retval = device_create_file(&acer_platform_device->dev, &dev_attr_wireless);
+		if (retval)
+			goto error;
+	}
+	if (has_cap(ACER_CAP_BLUETOOTH)) {
+		retval = device_create_file(&acer_platform_device->dev, &dev_attr_bluetooth);
+		if (retval)
+			goto error;
+	}
 #ifdef EXPERIMENTAL_INTERFACES
-	retval = device_create_file(&acer_platform_device->dev, &dev_attr_threeg);
-	if (retval)
-		goto error;
+	if (has_cap(ACER_CAP_THREEG)) {
+		retval = device_create_file(&acer_platform_device->dev, &dev_attr_threeg);
+		if (retval)
+			goto error;
+	}
 #endif
 	
 	return 0;
@@ -859,12 +808,8 @@ static void acer_platform_remove(void)
  */
 static int acer_acpi_add(struct acpi_device *device)
 {
-	/*acer_platform_add();*/
-
 	struct device *dev = acpi_get_physical_device(device->handle);
-
-	acer_rfkill_add(dev);
-
+	acer_platform_add();
 	if (has_cap(ACER_CAP_MAILLED))
 		acer_led_init(dev);
 	if (has_cap(ACER_CAP_BRIGHTNESS))
@@ -874,8 +819,8 @@ static int acer_acpi_add(struct acpi_device *device)
 
 static int acer_acpi_remove(struct acpi_device *device, int type)
 {
-	/*acer_platform_remove();*/
-	acer_rfkill_remove();
+	acer_platform_remove();
+
 	if (has_cap(ACER_CAP_MAILLED))
 		acer_led_exit();
 	if (has_cap(ACER_CAP_BRIGHTNESS))
@@ -909,12 +854,7 @@ static int __init acer_acpi_init(void)
 {
 	acpi_status status = AE_OK;
 
-	printk(ACER_INFO "Acer Laptop ACPI Extras version %s\n",
-			ACER_LAPTOP_VERSION);
-	if (acpi_disabled) {
-		printk(ACER_ERR "ACPI Disabled, unable to load.\n");
-		return -ENODEV;
-	}
+	printk(ACER_INFO "Acer Laptop ACPI Extras\n");
 
 	/*
 	 * Detect which WMI interface we're using.
@@ -925,7 +865,7 @@ static int __init acer_acpi_init(void)
 	if (is_valid_acpi_path(AMW0_METHOD)) {
 		DEBUG(0, "Detected ACER AMW0 interface\n");
 		interface = &AMW0_interface;
-		/* .ids is case sensitive - and AMW0 uses a spec-breaking case */
+		/* .ids is case sensitive - and AMW0 has a mixed case device */
 		acer_acpi_driver.ids = "pnp0c14";
 	} else if (is_valid_acpi_path(WMID_METHOD)) {
 		DEBUG(0, "Detected ACER WMID interface\n");
@@ -936,13 +876,8 @@ static int __init acer_acpi_init(void)
 	}
 
 	/* Now that we have a known interface, initialize it */
-	if (interface->init) {
-		status = interface->init(interface);
-		if (ACPI_FAILURE(status)) {
-			printk(ACER_ERR "Interface initialization failed.\n");
-			goto error_interface_init;
-		}
-	}
+	if (interface->init)
+		interface->init(interface);
 
 	/*
 	 * Register the driver
@@ -962,7 +897,6 @@ static int __init acer_acpi_init(void)
 	return status;
 
 error_acpi_bus_register:
-error_interface_init:
 error_no_interface:
 	return -ENODEV;
 }
