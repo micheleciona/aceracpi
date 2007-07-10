@@ -680,16 +680,20 @@ rfkill_toggle(threeg, ACER_CAP_THREEG);
 #define add_rfkill_device(value, type, cap) \
 	switch_##value = rfkill_allocate(dev, RFKILL_TYPE_##type);\
 	if (switch_##value) {\
-		switch_##value->name = "##value"; \
+		switch_##value->name = #value;\
 		get_bool(&result,cap); \
 		switch_##value->state = result; \
 		switch_##value->toggle_radio = *toggle_device_##value; \
-		rfkill_register(switch_##value); \
+		status = rfkill_register(switch_##value); \
+		if (status) {\
+			DEBUG(0, "Error registering rfkill device\n");\
+		}\
 	}
 
 static void acer_rfkill_add(struct device *dev)
 {
 	bool result;
+	int status;
 
 	if (has_cap(ACER_CAP_WIRELESS))
 		add_rfkill_device(wireless, WLAN, ACER_CAP_WIRELESS);
@@ -883,19 +887,19 @@ static int acer_acpi_remove(struct acpi_device *device, int type)
 		acer_led_exit();
 	if (has_cap(ACER_CAP_BRIGHTNESS))
 		acer_backlight_exit();
-
-rfkill_unregister(switch_wireless);
-
-
 	return 0;
 }
 
+#ifdef CONFIG_PM
 static int acer_acpi_resume(struct acpi_device *device)
 {
 	/* AMW0 fix - reset all devices, otherwise we have meaningless values */
 	interface->init(interface);
 	return 0;
 }
+#else
+#define acer_acpi_resume NULL
+#endif
 
 static struct acpi_driver acer_acpi_driver = {
 	.name = "acer_acpi",
