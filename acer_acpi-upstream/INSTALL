@@ -30,12 +30,12 @@ to install the kernel module. (You can use DESTDIR for repackaging).
 
 If that step fails, try:
 
-Copy the created file "acer-laptop.ko" to your kernel modules path. For most
+Copy the created file "acer_acpi.ko" to your kernel modules path. For most
 distributions, this is usually:
 "/lib/modules/<kernelversion>/kernel/drivers/char/".
 Update module dependencies: depmod -a
 
 6. Try loading the module with:
-	insmod/modprobe acer-laptop
+	insmod/modprobe acer_acpi
 
 If you don't see any error messages, check the README for usage information.

@@ -1,12 +1,12 @@
-This is acer-laptop version 0.1
+This is acer_acpi version 0.1
 
 ### THIS IS VERY MUCH A WORK IN PROGRESS.  NO WARRANTY GIVEN.  IF YOU
 ### BREAK YOUR LAPTOP USING THIS DRIVER, YOU GET TO KEEP THE PIECES AND
 ### I WILL ACCEPT ABSOLUTELY NO RESPONSIBILITY.
 
-acer-laptop was derived from the original acer_acpi - acer_acpi has been 
+acer_acpi was derived from the original acer_acpi - acer_acpi has been 
 modified to use sysfs and move various devices to specific subsystems. Because
-of the work involved, it has been decided to fork this work as acer-laptop (in
+of the work involved, it has been decided to fork this work as acer_acpi (in
 line with other in-kernel drivers) and work on submitting this upstream 
 (acer_acpi will be kept around for reference).
 
@@ -18,18 +18,18 @@ calls which are not allowed from a 64-bit OS.
 
 Please read the INSTALL file for installation instructions.
 
-acer-laptop is maintained by Carlos Corbacho <cathectic@gmail.com>
+acer_acpi is maintained by Carlos Corbacho <cathectic@gmail.com>
 
 [1] acerhk: http://www.cakey.de/acerhk/
 
 Usage
 *****
 
-As root, modprobe acer-laptop
+As root, modprobe acer_acpi
 
 (To enable debugging, add debug=X, where X is between 0 and 2).
 
-acer-laptop creates entries under /sys/devices/platform/acer-laptop, which 
+acer_acpi creates entries under /sys/devices/platform/acer_acpi, which 
 enables you to control some of the following (varies between models):
 
 * the wireless LAN card
@@ -52,7 +52,7 @@ and is acer:mail
 The brightness of the LCD panel is integrated into the backlight subsystem, can
 can be found in:
 
-/sys/class/backlight/acer-laptop
+/sys/class/backlight/acer_acpi
 
 To enable a feature on loading the module:
 modprobe acer_acpi {feature}=1
@@ -125,6 +125,6 @@ include the following information:
 Please check http://code.google.com/p/aceracpi/wiki/SupportedHardware first to
 see if your hardware is supported or unsupported.
 
-The latest version of acer-laptop can be found here:
+The latest version of acer_acpi can be found here:
 
 http://code.google.com/p/aceracpi
