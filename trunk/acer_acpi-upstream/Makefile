@@ -11,11 +11,11 @@ KERNELMAJOR=$(shell echo $(KERNELVERSION)|head -c3)
 KBUILD_BASENAME=
 
 # next line is for kernel 2.6, if you integrate the driver in the kernel tree
-# /usr/src/linux/drivers/acer-laptop - or something similar
+# /usr/src/linux/drivers/acer_acpi - or something similar
 # don't forget to add the following line to the parent dir's Makefile:
 # (/usr/src/linux/drivers/Makefile)
-# obj-m                           += acer-laptop/
-obj-m += acer-laptop.o
+# obj-m                           += acer_acpi/
+obj-m += acer_acpi.o
 
 CC=gcc
 CFLAGS+=-c -Wall -Wstrict-prototypes -Wno-trigraphs -O2 -fomit-frame-pointer -fno-strict-aliasing -fno-common -pipe
@@ -25,8 +25,8 @@ ifneq ($(KERNELMAJOR), 2.6)
 exit:
 endif
 
-TARGET := acer-laptop.ko
-SOURCE := acer-laptop.c
+TARGET := acer_acpi.ko
+SOURCE := acer_acpi.c
 
 all: $(TARGET)
 
@@ -39,10 +39,10 @@ help:
 	@echo -e install\\t- copies module binary to /lib/modules/$(KERNELVERSION)/extra/
 	@echo -e clean\\t- removes all binaries and temporary files
 
-acer-laptop.ko: $(SOURCE)
+acer_acpi.ko: $(SOURCE)
 	$(MAKE) -C $(KERNELSRC) SUBDIRS=$(PWD) modules
 
-acer-laptop.o: $(SOURCE)
+acer_acpi.o: $(SOURCE)
 	$(CC) $(INCLUDE) $(CFLAGS) -DMODVERSIONS -DMODULE -D__KERNEL__ -o $(TARGET) $(SOURCE)
 
 clean:

@@ -1,5 +1,5 @@
 /*
- *  acer-laptop.c - Acer Laptop ACPI Extras
+ *  acer_acpi.c - Acer Laptop ACPI Extras
  *
  *
  *  Copyright (C) 2005      E.M. Smith (acer_acpi)
@@ -30,7 +30,7 @@
  *                helped out acer_acpi enormously
  *  Corentin Chary, Mattia Dongili
  *              - asus-laptop & sony-laptop driver authors (respectively) -
- *                their code was the insipiration for acer-laptop.
+ *                their code was the insipiration for acer_acpi.
  *  Olaf Tauber
  *              - developer of acerhk, the inspiration to solve the 64-bit
  *                driver problem for [Mark Smith's] Aspire 5024.
@@ -66,7 +66,7 @@ MODULE_LICENSE("GPL");
  */
 #undef EXPERIMENTAL_INTERFACES
 
-#define ACER_LOGPREFIX "acer-laptop: "
+#define ACER_LOGPREFIX "acer_acpi: "
 #define ACER_ERR KERN_ERR ACER_LOGPREFIX
 #define ACER_NOTICE KERN_NOTICE ACER_LOGPREFIX
 #define ACER_INFO KERN_INFO ACER_LOGPREFIX
@@ -690,7 +690,7 @@ static int acer_backlight_init(struct device *dev)
 	struct backlight_device *bd;
 
 	DEBUG(1, "Loading backlight driver\n");
-	bd = backlight_device_register("acer-laptop", dev,
+	bd = backlight_device_register("acer_acpi", dev,
 				       NULL, &acer_backlight_ops);
 	if (IS_ERR(bd)) {
 		printk(ACER_ERR
@@ -742,7 +742,7 @@ static void acer_led_exit(void)
  */
 static struct platform_driver acer_platform_driver = {
 	.driver = {
-		.name = "acer-laptop",
+		.name = "acer_acpi",
 		.owner = THIS_MODULE,
 		}
 };
@@ -767,7 +767,7 @@ static int acer_platform_add(void)
 	int retval = -ENOMEM;
 	platform_driver_register(&acer_platform_driver);
 
-	acer_platform_device = platform_device_alloc("acer-laptop", -1);
+	acer_platform_device = platform_device_alloc("acer_acpi", -1);
 
 	platform_device_add(acer_platform_device);
 
