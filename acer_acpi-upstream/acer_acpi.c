@@ -2,7 +2,7 @@
  *  acer_acpi.c - Acer Laptop ACPI Extras
  *
  *
- *  Copyright (C) 2005      E.M. Smith (acer_acpi)
+ *  Copyright (C) 2005      E.M. Smith
  *  Copyright (C) 2007      Carlos Corbacho <cathectic@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -34,7 +34,8 @@
  *              - solved the ACPI problem that needed a double-modprobe in
  *                acer_acpi 0.2 and below.
  *  Jim Ramsay
- *              - Figured out and added support for WMID interface
+ *              - Figured out and added support for WMID, added generic interface
+ *                code
  */
 
 #include <linux/kernel.h>
@@ -127,6 +128,12 @@ MODULE_LICENSE("GPL");
 #define ACER_CAP_ANY        (0xffffffff)
 
 /*
+ * Interface type flags
+ */
+#define ACER_AMW0 (1<<0)
+#define ACER_WMID (1<<1)
+
+/*
  * Presumed start states -
  * For the AMW0 interface, there is no way to know for certain what the start
  * state is for any of the parameters (ACPI does not provide any methods or store
@@ -184,6 +191,12 @@ static int is_valid_acpi_path(const char *methodName)
 
 /* Each low-level interface must define at least some of the following */
 typedef struct _Interface {
+	/*
+	 * The ACPI device type
+	 */
+	uint32_t type;
+
+
 	/*
 	 * The capabilities this interface provides
 	 * In the future, these can be removed/added at runtime when we have a
@@ -422,6 +435,7 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, Interface *iface)
 }
 
 static Interface AMW0_interface = {
+	.type = ACER_AMW0,
 	.capability = (
 		ACER_CAP_MAILLED |
 		ACER_CAP_WIRELESS |
@@ -436,6 +450,24 @@ static Interface AMW0_interface = {
 /*
  * New interface (The WMID interface)
  */
+typedef struct _WMID_Data {
+	int mailled;
+	int wireless;
+	int bluetooth;
+#ifdef EXPERIMENTAL_INTERFACES
+	int threeg;
+#endif
+	int brightness;
+} WMID_Data;
+
+static void WMID_init(Interface *iface)
+{
+	WMID_Data *data;
+
+	/* Allocate our private data structure */
+	iface->data = kmalloc(sizeof(WMID_Data), GFP_KERNEL);
+	data = (WMID_Data*)iface->data;
+}
 
 static acpi_status
 WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
@@ -529,6 +561,7 @@ static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface)
 
 
 static Interface WMID_interface = {
+	.type = ACER_WMID,
 	.capability = (
 		ACER_CAP_WIRELESS
 		| ACER_CAP_BRIGHTNESS
@@ -541,7 +574,7 @@ static Interface WMID_interface = {
 	.set_bool = set_bool_via_u8,
 	.get_u8 = WMID_get_u8,
 	.set_u8 = WMID_set_u8,
-	.data = NULL,
+	.init = WMID_init,
 };
 
 /*
@@ -825,15 +858,72 @@ static int acer_acpi_remove(struct acpi_device *device, int type)
 }
 
 #ifdef CONFIG_PM
+static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
+{
+	/* 
+	 * WMID fix for suspend-to-disk - save all current states now so we can
+	 * restore them on resume
+	 */
+	bool value;
+	uint8_t u8value;
+
+	#define save_bool_device(device, cap) \
+	if (has_cap(cap)) {\
+		get_bool(&value, cap);\
+		data->device = value;\
+	}
+
+	#define save_u8_device(device, cap) \
+	if (has_cap(cap)) {\
+		get_u8(&u8value, cap);\
+		data->device = u8value;\
+	}
+	
+	if (interface->type == ACER_WMID) {
+		WMID_Data *data = interface->data;
+		save_bool_device(wireless, ACER_CAP_WIRELESS);
+		save_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
+#ifdef EXPERIMENTAL_INTERFACES
+		save_bool_device(threeg, ACER_CAP_THREEG);
+#endif
+		save_u8_device(brightness, ACER_CAP_BRIGHTNESS);
+	}
+
+	return 0;
+}
+
 static int acer_acpi_resume(struct acpi_device *device)
 {
-	/* AMW0 fix - reset all devices, otherwise we have meaningless values */
-	printk(ACER_INFO "Resetting AMW0 devices to off\n");
-	set_bool(0, ACER_CAP_WIRELESS);
-	set_bool(1, ACER_CAP_WIRELESS);
+	#define restore_bool_device(device, cap) \
+	if (has_cap(cap))\
+		set_bool(data->device, cap);\
+
+	/*
+	 * We must _always_ restore AMW0's values, otherwise the values
+	 * after suspend-to-disk are wrong
+	 */
+	if (interface->type == ACER_AMW0) {
+		AMW0_Data *data = interface->data;
+	
+		restore_bool_device(wireless, ACER_CAP_WIRELESS);
+		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
+		restore_bool_device(mailled, ACER_CAP_MAILLED);
+	}
+	else if (interface->type == ACER_WMID) {
+		WMID_Data *data = interface->data;
+#ifdef EXPERIMENTAL_DEVICES
+		restore_bool_device(threeg, THREEG);
+#endif
+		if (has_cap(ACER_CAP_BRIGHTNESS))
+			set_brightness((uint8_t)data->brightness);
+		restore_bool_device(wireless, ACER_CAP_WIRELESS);
+		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
+	}
+
 	return 0;
 }
 #else
+#define acer_acpi_suspend NULL
 #define acer_acpi_resume NULL
 #endif
 
@@ -844,6 +934,7 @@ static struct acpi_driver acer_acpi_driver = {
 	.ops = {
 		.add = acer_acpi_add,
 		.remove = acer_acpi_remove,
+		.suspend = acer_acpi_suspend,
 		.resume = acer_acpi_resume,
 		},
 };
