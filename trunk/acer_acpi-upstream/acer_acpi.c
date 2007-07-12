@@ -249,6 +249,12 @@ static bool has_cap(uint32_t cap)
 	return 0;
 }
 
+static void interface_free(Interface *iface)
+{
+	/* Free our private data structure */
+	kfree(iface->data);
+}
+
 /* These *_via_u8 use the interface's *_u8 methods to emulate other gets/sets */
 static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface)
 {
@@ -360,12 +366,6 @@ static void AMW0_init(Interface *iface)
 	data->wireless = data->mailled = data->bluetooth = -1;
 }
 
-static void AMW0_free(Interface *iface)
-{
-	/* Free our private data structure */
-	kfree(iface->data);
-}
-
 static acpi_status AMW0_get_bool(bool *value, uint32_t cap, Interface *iface)
 {
 	AMW0_Data *data = iface->data;
@@ -442,7 +442,7 @@ static Interface AMW0_interface = {
 		ACER_CAP_BLUETOOTH
 	),
 	.init = AMW0_init,
-	.free = AMW0_free,
+	.free = interface_free,
 	.get_bool = AMW0_get_bool,
 	.set_bool = AMW0_set_bool,
 };
@@ -570,11 +570,12 @@ static Interface WMID_interface = {
 		| ACER_CAP_THREEG
 #endif
 	),
+	.init = WMID_init,
+	.free = interface_free,
 	.get_bool = get_bool_via_u8,
 	.set_bool = set_bool_via_u8,
 	.get_u8 = WMID_get_u8,
 	.set_u8 = WMID_set_u8,
-	.init = WMID_init,
 };
 
 /*
@@ -649,42 +650,6 @@ static void acpi_commandline_init(void)
 }
 
 /*
- * sysfs interface
- */
-
-#define show_set_bool(value, cap)					\
-static ssize_t								\
-show_bool_##value(struct device *dev, struct device_attribute *attr,	\
-	char *buf)							\
-{									\
-	bool result;							\
-	acpi_status status = get_bool(&result, cap);			\
-	if (ACPI_SUCCESS(status))					\
-		return sprintf(buf, "%d\n", result);			\
-	return sprintf(buf, "Read error" );				\
-}									\
-									\
-static ssize_t								\
-set_bool_##value(struct device *dev, struct device_attribute *attr,	\
-	const char *buf,						\
-	size_t count)							\
-{									\
-	bool tmp = simple_strtoul(buf, NULL, 10);			\
-	acpi_status status = set_bool(tmp, cap); 			\
-		if (ACPI_FAILURE(status))				\
-			return -EINVAL;					\
-   	return count;							\
-}									\
-static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, 			\
-	show_bool_##value, set_bool_##value);
-
-show_set_bool(wireless, ACER_CAP_WIRELESS);
-show_set_bool(bluetooth, ACER_CAP_BLUETOOTH);
-#ifdef EXPERIMENTAL_INTERFACES
-show_set_bool(threeg, ACER_CAP_THREEG);
-#endif
-
-/*
  * Backlight device (UNTESTED!)
  */
 static struct backlight_device *acer_backlight_device;
@@ -696,17 +661,10 @@ static int read_brightness(struct backlight_device *bd)
 	return value;
 }
 
-static int set_backlight(struct backlight_device *bd, int value)
-{
-	set_brightness(value);
-	return 0;
-}
-
 static int update_bl_status(struct backlight_device *bd)
 {
-	int value = bd->props.brightness;
-
-	return set_backlight(bd, value);
+	set_brightness(bd->props.brightness);
+	return 0;
 }
 
 static struct backlight_ops acer_backlight_ops = {
@@ -757,7 +715,6 @@ static struct led_classdev mail_led = {
 
 static void acer_led_init(struct device *dev)
 {
-	DEBUG(1, "Loading LED driver\n");
 	led_classdev_register(dev, &mail_led);
 }
 
@@ -769,6 +726,39 @@ static void acer_led_exit(void)
 /*
  * Platform device
  */
+
+#define show_set_bool(value, cap) \
+static ssize_t \
+show_bool_##value(struct device *dev, struct device_attribute *attr, \
+	char *buf) \
+{ \
+	bool result; \
+	acpi_status status = get_bool(&result, cap); \
+	if (ACPI_SUCCESS(status)) \
+		return sprintf(buf, "%d\n", result); \
+	return sprintf(buf, "Read error" ); \
+} \
+\
+static ssize_t \
+set_bool_##value(struct device *dev, struct device_attribute *attr, \
+	const char *buf, \
+	size_t count) \
+{ \
+	bool tmp = simple_strtoul(buf, NULL, 10); \
+	acpi_status status = set_bool(tmp, cap); \
+		if (ACPI_FAILURE(status)) \
+			return -EINVAL; \
+   	return count; \
+} \
+static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, \
+	show_bool_##value, set_bool_##value);
+
+show_set_bool(wireless, ACER_CAP_WIRELESS);
+show_set_bool(bluetooth, ACER_CAP_BLUETOOTH);
+#ifdef EXPERIMENTAL_INTERFACES
+show_set_bool(threeg, ACER_CAP_THREEG);
+#endif
+
 static struct platform_driver acer_platform_driver = {
 	.driver = {
 		.name = "acer_acpi",
@@ -780,13 +770,14 @@ static struct platform_device *acer_platform_device;
 
 static int remove_sysfs(struct platform_device *device)
 {
-	if (has_cap(ACER_CAP_WIRELESS))
-		device_remove_file(&device->dev, &dev_attr_wireless);
-	if (has_cap(ACER_CAP_BLUETOOTH))
-		device_remove_file(&device->dev, &dev_attr_bluetooth);
+	#define remove_device_file(value, cap) \
+	if (has_cap(cap)) \
+		device_remove_file(&device->dev, &dev_attr_##value);
+
+	remove_device_file(wireless, ACER_CAP_WIRELESS);
+	remove_device_file(bluetooth, ACER_CAP_BLUETOOTH);
 #ifdef EXPERIMENTAL_INTERFACES
-	if (has_cap(ACER_CAP_THREEG))
-		device_remove_file(&device->dev, &dev_attr_threeg);
+	remove_device_file(threeg, ACER_CAP_THREEG);
 #endif
 	return 0;
 }
@@ -800,22 +791,17 @@ static int acer_platform_add(void)
 
 	platform_device_add(acer_platform_device);
 
-	if (has_cap(ACER_CAP_WIRELESS)) {
-		retval = device_create_file(&acer_platform_device->dev, &dev_attr_wireless);
-		if (retval)
-			goto error;
+	#define add_device_file(value, cap) \
+	if (has_cap(cap)) {\
+		retval = device_create_file(&acer_platform_device->dev, &dev_attr_##value);\
+		if (retval)\
+			goto error;\
 	}
-	if (has_cap(ACER_CAP_BLUETOOTH)) {
-		retval = device_create_file(&acer_platform_device->dev, &dev_attr_bluetooth);
-		if (retval)
-			goto error;
-	}
+
+	add_device_file(wireless, ACER_CAP_WIRELESS);
+	add_device_file(bluetooth, ACER_CAP_BLUETOOTH);
 #ifdef EXPERIMENTAL_INTERFACES
-	if (has_cap(ACER_CAP_THREEG)) {
-		retval = device_create_file(&acer_platform_device->dev, &dev_attr_threeg);
-		if (retval)
-			goto error;
-	}
+	add_device_file(threeg, ACER_CAP_THREEG);
 #endif
 	
 	return 0;
@@ -911,11 +897,12 @@ static int acer_acpi_resume(struct acpi_device *device)
 	}
 	else if (interface->type == ACER_WMID) {
 		WMID_Data *data = interface->data;
+
+		if (has_cap(ACER_CAP_BRIGHTNESS))
+			set_brightness((uint8_t)data->brightness);
 #ifdef EXPERIMENTAL_DEVICES
 		restore_bool_device(threeg, THREEG);
 #endif
-		if (has_cap(ACER_CAP_BRIGHTNESS))
-			set_brightness((uint8_t)data->brightness);
 		restore_bool_device(wireless, ACER_CAP_WIRELESS);
 		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
 	}
@@ -952,12 +939,12 @@ static int __init acer_acpi_init(void)
 	 *       acpi_bus driver?
 	 */
 	if (is_valid_acpi_path(AMW0_METHOD)) {
-		DEBUG(0, "Detected ACER AMW0 interface\n");
+		DEBUG(0, "Detected Acer AMW0 interface\n");
 		interface = &AMW0_interface;
 		/* .ids is case sensitive - and AMW0 has a mixed case device */
 		acer_acpi_driver.ids = "pnp0c14";
 	} else if (is_valid_acpi_path(WMID_METHOD)) {
-		DEBUG(0, "Detected ACER WMID interface\n");
+		DEBUG(0, "Detected Acer WMID interface\n");
 		interface = &WMID_interface;
 	} else {
 		printk(ACER_ERR "No or unsupported WMI interface, unable to load.\n");

@@ -68,8 +68,8 @@ Bugs/ Limitations
 *****************
 
 * Acer has provided _no_ information or documentation on their hardware - this
-driver is the result of the hard work of many people in working out how Acer's
-ACPI interface works.
+driver is the result of the hard work of many people in deciphering Acer's
+ACPI interfaces
 
 * The behaviour of the wireless LED will depend on your hardware and driver
 combination.
@@ -78,6 +78,12 @@ e.g. With the BCM4318 on the 5020 series:
 
 ndiswrapper: Light blinks on when transmitting
 bcm43xx: Solid light, blinks off when transmitting
+
+* AMW0 does not provide any methods to retrieve the current status of a device.
+We therefore store the last value we wrote to the device and return this. On
+startup for AMW0, we default to turning all the devices off so we have a sane
+default. This means that the status value can be wrong on X86_32 if you use
+wistron_btns to manipulate the same hardware.
 
 * acer_acpi does not yet have any means of deciding whether to enable or disable
 entries in sysfs - this means that for hardware that isn't there, you can still
@@ -89,13 +95,11 @@ a Bluetooth device.)
 * AMW0 and WMID expose different capabilities (e.g. the mail LED works on AMW0,
 but not WMID).
 
-* We do not store the status of the device when you hibernate. On AMW0,
-this will cause incorrect values to be returned from sysfs (this is a known
-issue and is being worked on).
-
 * We don't gurantee acer_acpi will work on your laptop. We keep a list of known
 supported (and some known unsupported hardware) here:
 http://code.google.com/p/aceracpi/wiki/SupportedHardware
+
+If your hardware is not on that list, please send in your DSDT (/proc/acpi/dsdt)
 
 Credits
 *******
