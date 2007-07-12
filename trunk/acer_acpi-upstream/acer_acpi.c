@@ -136,14 +136,16 @@ MODULE_LICENSE("GPL");
 /*
  * Presumed start states -
  * For the AMW0 interface, there is no way to know for certain what the start
- * state is for any of the parameters (ACPI does not provide any methods or store
- * this anywhere). We therefore start with an unknown state and then change
- * so that we are in a known state (we suspect Acer does something similar).
+ * state is for any of the devices (ACPI does not provide any methods or store
+ * this anywhere, and a device state will persist across a reboot).
  *
- * Plus, we can't yet tell which features are enabled or disabled on a specific
- * model, just ranges - e.g. The 5020 series can _support_ bluetooth; but the
- * 5021 has no bluetooth, whilst the 5024 does.  However, the BIOS identifies
- * both laptops as 5020 - we cannot tell them apart!
+ * The driver therefore changes from the unknown state to a known state (off)
+ * (Acer software just waits for the user to press the device button, as the
+ * scancode for the button changes when the device state is changed).
+ *
+ * Also, we can't yet tell which features are enabled or disabled on a specific
+ * model, just ranges; but we don't have enough information on the models, so we
+ * currently unconditionally enable all supported devices on a given interface.
  *
  * Basically the code works like this:
  *   - On init, any values specified on the commandline are set.
