@@ -25,12 +25,8 @@
  *
  *  Credits:
  *
- *  John Belmonte, Julien Lerouge & Karol Kozimor
- *              - Toshiba & ASUS Acpi driver authors (respectively) - their code
- *                helped out acer_acpi enormously
- *  Corentin Chary, Mattia Dongili
- *              - asus-laptop & sony-laptop driver authors (respectively) -
- *                their code was the insipiration for acer_acpi.
+ *  The authors of laptop ACPI modules in the kernel
+ *              - their work was an inspiration and a source of good code
  *  Olaf Tauber
  *              - developer of acerhk, the inspiration to solve the 64-bit
  *                driver problem for [Mark Smith's] Aspire 5024.
@@ -722,7 +718,7 @@ static void mail_led_set(struct led_classdev *led_cdev, enum led_brightness valu
 }
 
 static struct led_classdev mail_led = {
-	.name = "acer:mail",
+	.name = "acer_acpi:mail",
 	.brightness_set = mail_led_set,
 };
 
@@ -832,7 +828,9 @@ static int acer_acpi_remove(struct acpi_device *device, int type)
 static int acer_acpi_resume(struct acpi_device *device)
 {
 	/* AMW0 fix - reset all devices, otherwise we have meaningless values */
-	interface->init(interface);
+	printk(ACER_INFO "Resetting AMW0 devices to off\n");
+	set_bool(0, ACER_CAP_WIRELESS);
+	set_bool(1, ACER_CAP_WIRELESS);
 	return 0;
 }
 #else

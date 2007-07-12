@@ -43,7 +43,7 @@ acer_acpi.ko: $(SOURCE)
 	$(MAKE) -C $(KERNELSRC) SUBDIRS=$(PWD) modules
 
 acer_acpi.o: $(SOURCE)
-	$(CC) $(INCLUDE) $(CFLAGS) -DMODVERSIONS -DMODULE -D__KERNEL__ -o $(TARGET) $(SOURCE)
+	$(CC) $(INCLUDE) $(CFLAGS) -DMODVERSIONS -DMODULE -D__KERNEL__ -DCONFIG_PM -o $(TARGET) $(SOURCE)
 
 clean:
 	rm -f *~ *.o *.s *.ko *.mod.c .*.cmd Module.symvers
