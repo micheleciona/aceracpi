@@ -1,3 +1,8 @@
+2007-07-13	Version 0.6.1
+
+* Remove 2.4 kernel check, as it breaks *buntu systems
+  (acer_acpi is still 2.6 only)
+
 2007-07-06	Version 0.6
 
 * Ran code through lindent (Kernel coding style)

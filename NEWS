@@ -1,3 +1,6 @@
+2007-07-13 Version 0.6.1
+	Remove 2.4 kernel check, as it breaks *buntu systems
+
 2007-07-06 Version 0.6
 	Cleaned up code
 	Added WMID support
