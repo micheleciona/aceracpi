@@ -21,17 +21,10 @@ CC=gcc
 CFLAGS+=-c -Wall -Wstrict-prototypes -Wno-trigraphs -O2 -fomit-frame-pointer -fno-strict-aliasing -fno-common -pipe
 INCLUDE=-I$(KERNELSRC)/include
 
-ifneq ($(KERNELMAJOR), 2.6)
-exit:
-endif
-
 TARGET := acer_acpi.ko
 SOURCE := acer_acpi.c
 
 all: $(TARGET)
-
-exit:
-	@echo "No support for 2.4 series kernels"
 
 help:
 	@echo Possible targets:
