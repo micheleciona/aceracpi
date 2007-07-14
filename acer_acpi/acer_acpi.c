@@ -87,7 +87,7 @@ MODULE_LICENSE("GPL");
 #define ACER_MAX_BRIGHTNESS 0xf
 
 /*
- * These keyboards are known to require a keyboard quirk to make their
+ * These laptops are known to require a keyboard quirk to make their
  * multimedia keys emit scancodes
  */
 static struct dmi_system_id keyboard_dmi_table[] = {
