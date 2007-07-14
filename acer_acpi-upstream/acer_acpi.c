@@ -2,8 +2,8 @@
  *  acer_acpi.c - Acer Laptop ACPI Extras
  *
  *
- *  Copyright (C) 2005      E.M. Smith
- *  Copyright (C) 2007      Carlos Corbacho <cathectic@gmail.com>
+ *  Copyright (C) 2005-2007  E.M. Smith
+ *  Copyright (C) 2007       Carlos Corbacho <cathectic@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -48,6 +48,10 @@
 #include <linux/platform_device.h>
 #include <linux/leds.h>
 #include <asm/uaccess.h>
+#include <linux/preempt.h>
+#include <linux/delay.h>
+#include <linux/io.h>
+#include <linux/dmi.h>
 
 #include <acpi/acpi_drivers.h>
 
@@ -78,6 +82,28 @@ MODULE_LICENSE("GPL");
  * This may vary on other machines or other interfaces.
  */
 #define ACER_MAX_BRIGHTNESS 0xf
+
+/*
+ * These laptops are known to require a keyboard quirk to make their
+ * multimedia keys emit scancodes
+ */
+static struct dmi_system_id keyboard_dmi_table[] = {
+        {
+                .ident = "Acer Aspire 5680",
+                .matches = {
+			DMI_MATCH(DMI_BOARD_VENDOR, "Acer            "),
+			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5680     "),
+                },
+        },
+        { }
+};
+
+/*
+ * Keyboard controller ports
+ */
+#define ACER_KBD_STATUS_REG		0x64	/* Status register (R) */
+#define ACER_KBD_CNTL_REG		0x64	/* Controller command register (W) */
+#define ACER_KBD_DATA_REG		0x60	/* Keyboard data register (R/W) */
 
 /*
  * AMW0 EC Magic Number
@@ -311,6 +337,46 @@ WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, s
 	DEBUG(2, "  Result: %llu bytes\n", (uint64_t)(out ? out->length : 0) );
 
 	return status;
+}
+
+/*
+ * Keyboard quirk
+ */
+
+/*
+ * Wait for the keyboard controller to become ready
+ */
+static int wait_kbd_write(void)
+{
+	int i = 0;
+	while ((inb(ACER_KBD_STATUS_REG) & 0x02) && (i < 10000)) {
+		udelay(50);
+		i++;
+	}
+	return -(i == 10000);
+}
+
+static void set_keyboard_quirk(void) {
+	preempt_disable();
+	if (!wait_kbd_write()) {
+		outb(0x59, ACER_KBD_CNTL_REG);
+		if (!wait_kbd_write())
+			outb(0x90, ACER_KBD_DATA_REG);
+	}
+	else {
+		printk(ACER_ERR "Unable to apply keyboard quirk\n");
+	}
+	preempt_enable_no_resched();
+}
+
+/*
+ * Check if this system requires the keyboard quirk to enable multimedia keys
+ */
+static bool keyboard_quirk(void)
+{
+        if (dmi_check_system(keyboard_dmi_table))
+		return 1;
+	return 0;
 }
 
 /*
@@ -909,6 +975,12 @@ static int acer_acpi_resume(struct acpi_device *device)
 		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
 	}
 
+	/* Check if this laptop requires the keyboard quirk */
+	if (keyboard_quirk()) {
+		set_keyboard_quirk();
+		printk(ACER_INFO "Setting keyboard quirk to enable multimedia keys\n");
+	}
+
 	return 0;
 }
 #else
@@ -933,6 +1005,10 @@ static int __init acer_acpi_init(void)
 	acpi_status status = AE_OK;
 
 	printk(ACER_INFO "Acer Laptop ACPI Extras\n");
+	if (acpi_disabled) {
+		printk(ACER_ERR "ACPI Disabled, unable to load.\n");
+		return -ENODEV;
+	}
 
 	/*
 	 * Detect which WMI interface we're using.
@@ -967,6 +1043,12 @@ static int __init acer_acpi_init(void)
 	if (ACPI_FAILURE(status)) {
 		printk(ACER_ERR "Unable to register driver, aborting.\n");
 		goto error_acpi_bus_register;
+	}
+
+	/* Check if this laptop requires the keyboard quirk */
+	if (keyboard_quirk()) {
+		set_keyboard_quirk();
+		printk(ACER_INFO "Setting keyboard quirk to enable multimedia keys\n");
 	}
 
 	/* Finally, override any initial settings with values from the commandline */

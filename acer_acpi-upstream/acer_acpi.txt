@@ -12,7 +12,6 @@ acer_acpi is a driver to allow you to control various aspects of your Acer
 laptop hardware using the Linux kernel, on Acer laptops that have the ACPI
 devices AMW0 or WMID (both are attached to HID device PNP0C14).
 
-
 Background
 **********
 
@@ -49,7 +48,7 @@ To read the wireless status:
 	# cat /sys/devices/platform/acer_acpi/wireless
 
 Backlight
-**********
+*********
 
 If your backlight is supported (WMID only), this directory will exist:
 
@@ -64,12 +63,22 @@ If your mail LED is supported (AMW0 only), this directory will exist:
 
 /sys/class/leds/acer_acpi:mail
 
+Multimedia Keys
+***************
+
+Some newer Acer laptops inexplicably require an old keyboard quirk to make the
+multimedia keys emit scancodes.
+
+This quirk is automatically applied on those laptops that we know require it.
+If the multimedia keys on your laptop do not work, please contact us so we can
+add your laptop to this list.
+
 Bugs/ Limitations
 *****************
 
 * Acer has provided _no_ information or documentation on their hardware - this
-driver is the result of the hard work of many people in deciphering Acer's
-ACPI interfaces
+driver is the result of the hard work of many people deciphering Acer's
+hardware.
 
 * The behaviour of the wireless LED will depend on your hardware and driver
 combination.
