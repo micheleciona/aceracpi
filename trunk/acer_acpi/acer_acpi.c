@@ -94,7 +94,7 @@ static struct dmi_system_id keyboard_dmi_table[] = {
         {
                 .ident = "Acer Aspire 5680",
                 .matches = {
-			DMI_MATCH(DMI_BOARD_VENDOR, "Acer            "),
+			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5680     "),
                 },
         },
