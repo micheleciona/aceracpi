@@ -51,6 +51,10 @@
 #include <linux/delay.h>
 #include <linux/suspend.h>
 #include <asm/uaccess.h>
+#include <linux/preempt.h>
+#include <linux/delay.h>
+#include <linux/io.h>
+#include <linux/dmi.h>
 
 #include <acpi/acpi_drivers.h>
 
@@ -81,6 +85,28 @@ MODULE_LICENSE("GPL");
  * This may vary on other machines or other interfaces.
  */
 #define ACER_MAX_BRIGHTNESS 0xf
+
+/*
+ * These keyboards are known to require a keyboard quirk to make their
+ * multimedia keys emit scancodes
+ */
+static struct dmi_system_id keyboard_dmi_table[] = {
+        {
+                .ident = "Acer Aspire 5680",
+                .matches = {
+                        DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
+                        DMI_MATCH(DMI_BOARD_NAME, "Aspire 5680"),
+                },
+        },
+        { }
+};
+
+/*
+ * Keyboard controller ports
+ */
+#define ACER_KBD_STATUS_REG		0x64	/* Status register (R) */
+#define ACER_KBD_CNTL_REG		0x64	/* Controller command register (W) */
+#define ACER_KBD_DATA_REG		0x60	/* Keyboard data register (R/W) */
 
 /*
  * Magic Number -
@@ -295,6 +321,38 @@ WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, s
 	DEBUG(2, "  Result: %llu bytes\n", (uint64_t)(out ? out->length : 0) );
 
 	return status;
+}
+
+/*
+ * Wait for the keyboard controller to become ready
+ */
+static int wait_kbd_write(void)
+{
+	int i = 0;
+	while ((inb(ACER_KBD_STATUS_REG) & 0x02) && (i < 10000)) {
+		udelay(50);
+		i++;
+	}
+	return -(i == 10000);
+}
+
+static void set_keyboard_quirk(void) {
+	preempt_disable();
+	if (!wait_kbd_write())
+		outb(0x59, ACER_KBD_CNTL_REG);
+	if (!wait_kbd_write())
+		outb(0x90, ACER_KBD_DATA_REG);
+	preempt_enable_no_resched();
+}
+
+/*
+ * Check if this system requires the keyboard quirk to enable multimedia keys
+ */
+static bool keyboard_quirk(void)
+{
+        if (dmi_check_system(keyboard_dmi_table))
+		return 1;
+	return 0;
 }
 
 
@@ -823,7 +881,7 @@ static int __init acer_acpi_init(void)
 		DEBUG(0, "Detected ACER AMW0 interface\n");
 		interface = &AMW0_interface;
 		/* .ids is case sensitive - and AMW0 uses a strange mixed case */
-		acer_acpi_driver.ids = "pnp0c14";
+		acer.ids = "pnp0c14";
 	} else if (is_valid_acpi_path(WMID_METHOD)) {
 		DEBUG(0, "Detected ACER WMID interface\n");
 		interface = &WMID_interface;
@@ -865,6 +923,12 @@ static int __init acer_acpi_init(void)
 	if (ACPI_FAILURE(status)) {
 		printk(MY_ERR "Unable to register driver, aborting.\n");
 		goto error_acpi_bus_register;
+	}
+
+	/* Check if this laptop requires the keyboard quirk */
+	if (keyboard_quirk()) {
+		set_keyboard_quirk();
+		printk(MY_INFO "Setting keyboard quirk to enable multimedia keys\n");
 	}
 
 	/* Finally, override any initial settings with values from the commandline */
