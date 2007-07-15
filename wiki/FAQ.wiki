@@ -3,45 +3,37 @@
 
 = FAQ =
 
-==1. What is aceracpi?==
+==1. What is acer_acpi?==
 
 Jump to the [http://code.google.com/p/aceracpi/ main page] to find out.
 
 ==2. What hardware is supported?==
 
-Aspire 5010/5020 series under many Linux distributions. Both 32-bit and 64-bit kernels work.
-I've also had reports of success on the Aspire 3020 series, Aspire 9303wsmi, the Travelmate 4400 series, and a Fujitsu Siemens Amilo A1650.
+See http://code.google.com/p/aceracpi/wiki/SupportedHardware
 
 ==3. What hardware is unsupported?==
 
-I know for a fact that aceracpi doesn't work on the Aspire 1500 series, or the Acer Ferrari 4000 series. The ACPI interface I use doesn't exist on that machine.
+I know for a fact that aceracpi doesn't work on the Aspire 1500 series, or the Acer Ferrari 4000 series. The ACPI interfaces we use don't exist on that machine.
 
 ==4. It doesn't work on supported hardware! I get "Unable to register driver, aborting!"==
 
-aceracpi versions 0.2 and below required you to modprobe the driver twice to make the driver work. This is resolved in version 0.3 and above. Alternatively, some Aspire 5000 series have a slightly different ACPI BIOS - try replacing {{{"PNP0C14"}}} with {{{"*PNP0C14"}}} in {{{acer_acpi.c}}} and recompiling. Let me know if that works! I do intend to handle that problem in a later version of aceracpi, time permitting.
+Please upgrade to the latest version of acer_acpi
 
-==5. dmesg tells me "No WMI Interface: unable to load"==
+==5. "Sorry, not yet implemented" or "Sorry, reading status not yet implemented"==
 
-Your laptop does not have the ACPI BIOS interface I use to control the hardware. There may be an equivalent function with a different name - in order to find it, you'll need to do some disassembly of your ACPI DSDT.
+Please upgrade to the latest version of acer_acpi
 
-==6. "Sorry, not yet implemented" or "Sorry, reading status not yet implemented"==
+==6. dmesg tells me "No or unsupported WMI interface, unable to load"==
 
-{{{cat /proc/acpi/acer/{something} }}} doesn't yet do anything useful. One day ...
-The interfaces should work correctly, however.
+Your laptop does not have the ACPI BIOS interface we use to control the hardware. There may be an equivalent function with a different name - in order to find it, you'll need to do some disassembly of your ACPI DSDT.
 
-==7. I sent you an email ages ago, why haven't you replied?==
+==7. When is the next version of aceracpi coming out?==
 
-See the answer to number 8, below
-
-==8. When is the next version of aceracpi coming out?==
-
-Answer to both (7) and (8) - unfortunately for aceracpi, since I got the last version out I have moved to a laptop with fully supported hardware, so don't use aceracpi myself any longer.  I'm still keeping the pages alive, though, and rolled out version 0.4 at the end of March 2007.  That'll probably be the last version I publish, unless I get any more patches.
+When It's Ready(TM).
 
 
 And finally, not a frequently-asked-question ...
 
-==9. Can I maintain a package for $LINUX_DISTRO?==
+==8. Can I maintain a package for $LINUX_DISTRO?==
 
 Feel free! That's what the GPL is for :-) But I'd appreciate an email, so I know in advance where to direct questions ;-)
-
-
