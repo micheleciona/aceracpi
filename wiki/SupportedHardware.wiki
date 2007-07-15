@@ -8,7 +8,7 @@ To summarise: the driver only supports those laptops that present a WMI-ACPI int
 
 acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Siemens laptop uses this interface as well.
 
-Unfortunately, it is not possible to tell by the hardware alone which series require acer_acpi - different series use different chipsets (ATi and nVidia have both been seen). The chances are, if you need to install LaunchManager (or similar) on Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
+Unfortunately, it is not possible to tell by the hardware alone which series require acer_acpi - different series use different chipsets (ATi and nVidia have both been seen). The chances are, if you need to install LaunchManager or Mobility Center on Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
 
 If you discover your hardware is supported by acer_acpi and it is not listed here, please send a dump of /proc/acpi/dsdt to me (cathectic(@)gmail.com), also listing the make and model of your laptop.
 
@@ -26,6 +26,7 @@ Legend:
   * [dw] = DSDT wanted (Please submit yours to us)
   * [n] = No WMI ACPI interface, will not support
   * [r] = New WMI ACPI interface, requires reverse engineering (please contact us to help with this if you can)
+  * [k] = Requires a keyboard quirk to enable multimedia keys
   * [1] = Version 1 (AMW0 interface)
   * [2] = Version 2 (WMID interface)
 
@@ -44,7 +45,7 @@ Legend:
   * 5580 series [c,d,2]
   * 5610 series [c,d,2]
   * 5650 series [c,d,2]
-  * 5680 series [c,d,2]
+  * 5680 series [c,d,2,k]
   * 9300 series [u,dw,1]
   * 9420 series [c,d,1] (Wireless is a hardware switch, not controlled by acer_acpi)
 
