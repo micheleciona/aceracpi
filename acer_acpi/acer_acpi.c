@@ -49,7 +49,6 @@
 #include <linux/types.h>
 #include <linux/proc_fs.h>
 #include <linux/delay.h>
-#include <linux/suspend.h>
 #include <asm/uaccess.h>
 #include <linux/preempt.h>
 #include <linux/io.h>
