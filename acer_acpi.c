@@ -49,10 +49,8 @@
 #include <linux/types.h>
 #include <linux/proc_fs.h>
 #include <linux/delay.h>
+#include <linux/suspend.h>
 #include <asm/uaccess.h>
-#include <linux/preempt.h>
-#include <linux/io.h>
-#include <linux/dmi.h>
 
 #include <acpi/acpi_drivers.h>
 
@@ -83,28 +81,6 @@ MODULE_LICENSE("GPL");
  * This may vary on other machines or other interfaces.
  */
 #define ACER_MAX_BRIGHTNESS 0xf
-
-/*
- * These laptops are known to require a keyboard quirk to make their
- * multimedia keys emit scancodes
- */
-static struct dmi_system_id keyboard_dmi_table[] = {
-        {
-                .ident = "Acer Aspire 5680",
-                .matches = {
-			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
-			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5680     "),
-                },
-        },
-        { }
-};
-
-/*
- * Keyboard controller ports
- */
-#define ACER_KBD_STATUS_REG		0x64	/* Status register (R) */
-#define ACER_KBD_CNTL_REG		0x64	/* Controller command register (W) */
-#define ACER_KBD_DATA_REG		0x60	/* Keyboard data register (R/W) */
 
 /*
  * Magic Number -
@@ -210,6 +186,11 @@ typedef struct _ProcItem {
 	unsigned long (*write_func) (const char *, unsigned long, uint32_t);
 	unsigned int capability;
 } ProcItem;
+
+struct acer_hotk {
+	struct acpi_device *device;
+	acpi_handle handle;
+};
 
 static struct proc_dir_entry *acer_proc_dir;
 
@@ -321,38 +302,6 @@ WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, s
 	return status;
 }
 
-/*
- * Wait for the keyboard controller to become ready
- */
-static int wait_kbd_write(void)
-{
-	int i = 0;
-	while ((inb(ACER_KBD_STATUS_REG) & 0x02) && (i < 10000)) {
-		udelay(50);
-		i++;
-	}
-	return -(i == 10000);
-}
-
-static void set_keyboard_quirk(void) {
-	preempt_disable();
-	if (!wait_kbd_write())
-		outb(0x59, ACER_KBD_CNTL_REG);
-	if (!wait_kbd_write())
-		outb(0x90, ACER_KBD_DATA_REG);
-	preempt_enable_no_resched();
-}
-
-/*
- * Check if this system requires the keyboard quirk to enable multimedia keys
- */
-static bool keyboard_quirk(void)
-{
-        if (dmi_check_system(keyboard_dmi_table))
-		return 1;
-	return 0;
-}
-
 
 /*
  * Old interface (now known as the AMW0 interface)
@@ -384,11 +333,22 @@ static acpi_status WMAB_execute(WMAB_args * regbuf, struct acpi_buffer *result)
 }
 
 static acpi_status AMW0_init(Interface *iface) {
+	WMAB_args args;
+	acpi_status status;
 	AMW0_Data *data;
 
 	/* Allocate our private data structure */
 	iface->data = kmalloc(sizeof(AMW0_Data), GFP_KERNEL);
 	data = (AMW0_Data*)iface->data;
+
+	/* 
+	 * Call the interface once so the BIOS knows it's to notify us of
+	 * events via PNP0C14
+	 */
+	memset(&args, 0, sizeof(WMAB_args));
+	args.eax = ACER_WRITE;
+	args.ebx = 0;
+	status = WMAB_execute(&args, NULL);
 
 	/* 
 	 * If the commandline doesn't specify these, we need to force them to
@@ -407,7 +367,7 @@ static acpi_status AMW0_init(Interface *iface) {
 	 */
 	data->wireless = data->mailled = data->bluetooth = -1;
 
-	return AE_OK;
+	return status;
 }
 
 static void AMW0_free(Interface *iface) {
@@ -851,11 +811,72 @@ static acpi_status __exit remove_proc_entries(void)
 	return AE_OK;
 }
 
-static struct acpi_driver acer = {
+/*
+ * TODO: make this actually do useful stuff, if we ever see events 
+ */
+static void acer_acerkeys_notify(acpi_handle handle, u32 event, void *data)
+{
+	struct acer_hotk *hotk = (struct acer_hotk *)data;
+
+	if (!hotk)
+		return;
+	printk(MY_ERR "Got an event!! %X", event);
+
+	return;
+}
+
+static int acpi_acerkeys_add(struct acpi_device *device)
+{
+	struct acer_hotk *hotk = NULL;
+	acpi_status status = AE_OK;
+
+	if (!device)
+		return -EINVAL;
+
+	hotk =
+		(struct acer_hotk *)kmalloc(sizeof(struct acer_hotk), GFP_KERNEL);
+	if (!hotk)
+		return -ENOMEM;
+	memset(hotk, 0, sizeof(struct acer_hotk));
+	hotk->handle = device->handle;
+	strcpy(acpi_device_name(device), "Acer Laptop ACPI Extras");
+	strcpy(acpi_device_class(device), "hkey");
+	acpi_driver_data(device) = hotk;
+	hotk->device = device;
+
+	status = acpi_install_notify_handler(hotk->handle, ACPI_SYSTEM_NOTIFY,
+			acer_acerkeys_notify, hotk);
+	if (ACPI_FAILURE(status))
+		printk(MY_ERR "Error installing notify handler.\n");
+	return 0;
+}
+
+static int acpi_acerkeys_remove(struct acpi_device *device, int type)
+{
+	acpi_status status = 0;
+	struct acer_hotk *hotk = NULL;
+
+	if (!device || !acpi_driver_data(device))
+		return -EINVAL;
+	hotk = (struct acer_hotk *)acpi_driver_data(device);
+
+	status = acpi_remove_notify_handler(hotk->handle, ACPI_SYSTEM_NOTIFY,
+			acer_acerkeys_notify);
+	if (ACPI_FAILURE(status))
+		printk(MY_ERR "Error removing notify handler.\n");
+	kfree(hotk);
+
+	return 0;
+}
+
+static struct acpi_driver acpi_acerkeys = {
 	.name = "acer_acpi",
-	.class = "acer",
+	.class = "hotkey",
 	.ids = "PNP0C14",
-	.ops = {},
+	.ops = {
+		.add = acpi_acerkeys_add,
+		.remove = acpi_acerkeys_remove,
+	},
 };
 
 static int __init acer_acpi_init(void)
@@ -878,8 +899,6 @@ static int __init acer_acpi_init(void)
 	if (is_valid_acpi_path(AMW0_METHOD)) {
 		DEBUG(0, "Detected ACER AMW0 interface\n");
 		interface = &AMW0_interface;
-		/* .ids is case sensitive - and AMW0 uses a strange mixed case */
-		acer.ids = "pnp0c14";
 	} else if (is_valid_acpi_path(WMID_METHOD)) {
 		DEBUG(0, "Detected ACER WMID interface\n");
 		interface = &WMID_interface;
@@ -912,21 +931,15 @@ static int __init acer_acpi_init(void)
 	}
 
 	/*
-	 * Register the driver
+	 * Register the hotkeys driver
 	 *
-	 * TODO: Can we use the bus detection code to check for the interface
-	 *       or all or part of the method ID path?
+	 * TODO: Does this do anything?  Can we use the bus detection code to
+	 *       check for the interface or all or part of the method ID path?
 	 */
-	status = acpi_bus_register_driver(&acer);
+	status = acpi_bus_register_driver(&acpi_acerkeys);
 	if (ACPI_FAILURE(status)) {
 		printk(MY_ERR "Unable to register driver, aborting.\n");
 		goto error_acpi_bus_register;
-	}
-
-	/* Check if this laptop requires the keyboard quirk */
-	if (keyboard_quirk()) {
-		set_keyboard_quirk();
-		printk(MY_INFO "Setting keyboard quirk to enable multimedia keys\n");
 	}
 
 	/* Finally, override any initial settings with values from the commandline */
@@ -949,7 +962,7 @@ error_no_interface:
 
 static void __exit acer_acpi_exit(void)
 {
-	acpi_bus_unregister_driver(&acer);
+	acpi_bus_unregister_driver(&acpi_acerkeys);
 
 	remove_proc_entries();
 
