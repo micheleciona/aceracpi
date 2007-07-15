@@ -43,7 +43,6 @@
 #include <linux/init.h>
 #include <linux/types.h>
 #include <linux/delay.h>
-#include <linux/suspend.h>
 #include <linux/backlight.h>
 #include <linux/platform_device.h>
 #include <linux/leds.h>
