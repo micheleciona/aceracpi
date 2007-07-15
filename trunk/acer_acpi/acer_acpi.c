@@ -156,6 +156,12 @@ static struct dmi_system_id keyboard_dmi_table[] = {
 #define ACER_CAP_ANY        (0xffffffff)
 
 /*
+ * Interface type flags
+ */
+#define ACER_AMW0 (1<<0)
+#define ACER_WMID (1<<1)
+
+/*
  * Presumed start states -
  * For the old-style interfaces, there is no way to know for certain what the start state
  * is for any of the parameters (ACPI does not provide any methods or store this
@@ -225,6 +231,11 @@ static int is_valid_acpi_path(const char *methodName)
 /* Each low-level interface must define at least some of the following */
 typedef struct _Interface {
 	/*
+	 * The ACPI device type
+	 */
+	uint32_t type;
+
+	/*
 	 * The capabilities this interface provides
 	 * In the future, these can be removed/added at runtime when we have a
 	 * way of detecting what capabilities are /actually/ present on an
@@ -236,7 +247,7 @@ typedef struct _Interface {
 	 * Initializes an interface, should allocate the interface-specific
 	 * data
 	 */
-	acpi_status (*init) (struct _Interface*);
+	void (*init) (struct _Interface*);
 
 	/*
 	 * Frees an interface, should free the interface-specific data
@@ -267,6 +278,20 @@ static Interface *interface;
 /*
  * General interface convenience methods
  */
+
+static bool has_cap(uint32_t cap)
+{
+	if ((interface->capability & cap) != 0) {
+		return 1;
+	}
+	return 0;
+}
+
+static void interface_free(Interface *iface)
+{
+	/* Free our private data structure */
+	kfree(iface->data);
+}
 
 /* These *_via_u8 use the interface's *_u8 methods to emulate other gets/sets */
 static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface) {
@@ -383,7 +408,7 @@ static acpi_status WMAB_execute(WMAB_args * regbuf, struct acpi_buffer *result)
 	return status;
 }
 
-static acpi_status AMW0_init(Interface *iface) {
+static void AMW0_init(Interface *iface) {
 	AMW0_Data *data;
 
 	/* Allocate our private data structure */
@@ -406,13 +431,6 @@ static acpi_status AMW0_init(Interface *iface) {
 	 * acer_commandline_init will definitely set them.
 	 */
 	data->wireless = data->mailled = data->bluetooth = -1;
-
-	return AE_OK;
-}
-
-static void AMW0_free(Interface *iface) {
-	/* Free our private data structure */
-	kfree(iface->data);
 }
 
 static acpi_status AMW0_get_bool(bool *value, uint32_t cap, Interface *iface)
@@ -484,13 +502,14 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, Interface *iface)
 }
 
 static Interface AMW0_interface = {
+	.type = ACER_AMW0,
 	.capability = (
 		ACER_CAP_MAILLED |
 		ACER_CAP_WIRELESS |
 		ACER_CAP_BLUETOOTH
 	),
 	.init = AMW0_init,
-	.free = AMW0_free,
+	.free = interface_free,
 	.get_bool = AMW0_get_bool,
 	.set_bool = AMW0_set_bool,
 };
@@ -498,6 +517,24 @@ static Interface AMW0_interface = {
 /*
  * New interface (The WMID interface)
  */
+typedef struct _WMID_Data {
+	int mailled;
+	int wireless;
+	int bluetooth;
+#ifdef EXPERIMENTAL_INTERFACES
+	int threeg;
+#endif
+	int brightness;
+} WMID_Data;
+
+static void WMID_init(Interface *iface)
+{
+	WMID_Data *data;
+
+	/* Allocate our private data structure */
+	iface->data = kmalloc(sizeof(WMID_Data), GFP_KERNEL);
+	data = (WMID_Data*)iface->data;
+}
 
 static acpi_status
 WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
@@ -597,6 +634,8 @@ static Interface WMID_interface = {
 		| ACER_CAP_THREEG
 #endif
 	),
+	.init = WMID_init,
+	.free = interface_free,
 	.get_bool = get_bool_via_u8,
 	.set_bool = set_bool_via_u8,
 	.get_u8 = WMID_get_u8,
@@ -671,13 +710,6 @@ static acpi_status set_bool(int value, uint32_t cap) {
 	acpi_status status = AE_BAD_PARAMETER;
 	if ((value == 0 || value == 1) &&
 			(interface->capability & cap)) {
-		if (interface->get_bool) {
-			/* If possible, only set if the value has changed */
-			bool actual;
-			status = interface->get_bool(&actual, cap, interface);
-			if (ACPI_SUCCESS(status) && actual == (bool)value)
-				return status;
-		}
 		if (interface->set_bool) 
 			status = interface->set_bool(value == 1, cap, interface);
 	}
@@ -851,11 +883,86 @@ static acpi_status __exit remove_proc_entries(void)
 	return AE_OK;
 }
 
+static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
+{
+	/* 
+	 * WMID fix for suspend-to-disk - save all current states now so we can
+	 * restore them on resume
+	 */
+	bool value;
+	uint8_t u8value;
+
+	#define save_bool_device(device, cap) \
+	if (has_cap(cap)) {\
+		get_bool(&value, cap);\
+		data->device = value;\
+	}
+
+	#define save_u8_device(device, cap) \
+	if (has_cap(cap)) {\
+		get_u8(&u8value, cap);\
+		data->device = u8value;\
+	}
+	
+	if (interface->type == ACER_WMID) {
+		WMID_Data *data = interface->data;
+		save_bool_device(wireless, ACER_CAP_WIRELESS);
+		save_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
+#ifdef EXPERIMENTAL_INTERFACES
+		save_bool_device(threeg, ACER_CAP_THREEG);
+#endif
+		save_u8_device(brightness, ACER_CAP_BRIGHTNESS);
+	}
+
+	return 0;
+}
+
+static int acer_acpi_resume(struct acpi_device *device)
+{
+	#define restore_bool_device(device, cap) \
+	if (has_cap(cap))\
+		set_bool(data->device, cap);\
+
+	/*
+	 * We must _always_ restore AMW0's values, otherwise the values
+	 * after suspend-to-disk are wrong
+	 */
+	if (interface->type == ACER_AMW0) {
+		AMW0_Data *data = interface->data;
+	
+		restore_bool_device(wireless, ACER_CAP_WIRELESS);
+		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
+		restore_bool_device(mailled, ACER_CAP_MAILLED);
+	}
+	else if (interface->type == ACER_WMID) {
+		WMID_Data *data = interface->data;
+
+		if (has_cap(ACER_CAP_BRIGHTNESS))
+			set_brightness((uint8_t)data->brightness);
+#ifdef EXPERIMENTAL_DEVICES
+		restore_bool_device(threeg, THREEG);
+#endif
+		restore_bool_device(wireless, ACER_CAP_WIRELESS);
+		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
+	}
+
+	/* Check if this laptop requires the keyboard quirk */
+	if (keyboard_quirk()) {
+		set_keyboard_quirk();
+		printk(MY_INFO "Setting keyboard quirk to enable multimedia keys\n");
+	}
+
+	return 0;
+}
+
 static struct acpi_driver acer = {
 	.name = "acer_acpi",
 	.class = "acer",
 	.ids = "PNP0C14",
-	.ops = {},
+	.ops = {
+		.suspend = acer_acpi_suspend,
+		.resume = acer_acpi_resume,
+	},
 };
 
 static int __init acer_acpi_init(void)
@@ -889,13 +996,8 @@ static int __init acer_acpi_init(void)
 	}
 
 	/* Now that we have a known interface, initialize it */
-	if (interface->init) {
-		status = interface->init(interface);
-		if (ACPI_FAILURE(status)) {
-			printk(MY_ERR "Interface initialization failed.\n");
-			goto error_interface_init;
-		}
-	}
+	if (interface->init)
+		interface->init(interface);
 
 	/* Create the proc entries */
 	acer_proc_dir = proc_mkdir(PROC_ACER, acpi_root_dir);
@@ -942,7 +1044,6 @@ error_proc_add:
 error_proc_mkdir:
 	if (interface->free)
 		interface->free(interface);
-error_interface_init:
 error_no_interface:
 	return -ENODEV;
 }
