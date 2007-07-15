@@ -49,7 +49,6 @@
 #include <linux/leds.h>
 #include <asm/uaccess.h>
 #include <linux/preempt.h>
-#include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/dmi.h>
 
