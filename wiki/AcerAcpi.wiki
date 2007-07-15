@@ -1,5 +1,5 @@
 #summary The original acer_acpi web page.
-#labels Featured
+#labels Deprecated
 
 = Very Important Person =
 
@@ -102,6 +102,5 @@ The first public version of aceracpi.
     * 2005-08-27 version 0.1
 
 Test version, used by a whole two people :-)
-
 
 
