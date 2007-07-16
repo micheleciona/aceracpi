@@ -77,7 +77,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 5000 series [c,d,n]
 
 ====Ferrari====
-  * 4000 series [u,dw,n]
+  * 4000 series [c,d,n]
 
 ====TravelMate====
   * 4000 series [c,d,n]
