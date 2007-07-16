@@ -81,3 +81,4 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 
 ====TravelMate====
   * 4000 series [c,d,n]
+  * 4050 series [c,d,n]
