@@ -73,6 +73,8 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 1410 series [c,d,n]
   * 1500 series [u,dw]
   * 1520 series [c,d,n]
+  * 1640 series [u,dw,n]
+  * 1680 series [u,dw,n]
   * 1690 series [c,d,n]
   * 5000 series [c,d,n]
 
