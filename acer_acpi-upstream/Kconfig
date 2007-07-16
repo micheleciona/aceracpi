@@ -1,4 +1,4 @@
-config ACER_LAPTOP
+config ACER_ACPI
 	tristate "Acer Laptop ACPI Extras (EXPERIMENTAL)"
 	depends on X86
 	depends on ACPI
