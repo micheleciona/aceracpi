@@ -3,7 +3,7 @@
 #KERNELSRC=/usr/src/linux
 #KERNELSRC=/usr/src/kernel-source-2.4.21-acpi-i2c-lmsensors
 KERNELSRC?=/lib/modules/`uname -r`/build
-KERNELVERSION=$(shell for f in $(KERNELSRC)/include/linux/{utsrelease.h,version.h}; do \
+KERNELVERSION=$(shell for f in ${KERNELSRC}/include/linux/{utsrelease.h,version.h}; do \
 	test -f $$f && awk -F\" '/RELEASE/ {print $$2}' $$f && break; \
 	done)
 
@@ -21,10 +21,17 @@ CC=gcc
 CFLAGS+=-c -Wall -Wstrict-prototypes -Wno-trigraphs -O2 -fomit-frame-pointer -fno-strict-aliasing -fno-common -pipe
 INCLUDE=-I$(KERNELSRC)/include
 
+ifneq ($(KERNELMAJOR), 2.6)
+exit:
+endif
+
 TARGET := acer_acpi.ko
 SOURCE := acer_acpi.c
 
 all: $(TARGET)
+
+exit:
+	@echo "No support for 2.4 series kernels"
 
 help:
 	@echo Possible targets:
