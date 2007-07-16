@@ -2,7 +2,7 @@
 # autodetection does not work
 #KERNELSRC=/usr/src/linux
 #KERNELSRC=/usr/src/kernel-source-2.4.21-acpi-i2c-lmsensors
-KERNELSRC?=/lib/modules/`uname -r`/build
+KERNELSRC=/lib/modules/`uname -r`/build
 KERNELVERSION=$(shell for f in ${KERNELSRC}/include/linux/{utsrelease.h,version.h}; do \
 	test -f $$f && awk -F\" '/RELEASE/ {print $$2}' $$f && break; \
 	done)
