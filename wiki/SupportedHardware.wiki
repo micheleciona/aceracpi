@@ -47,6 +47,7 @@ Legend:
   * 5580 series [c,d,2]
   * 5610 series [c,d,2]
   * 5650 series [c,d,2]
+  * 5670 series [c,d,2]
   * 5680 series [c,d,2,k]
   * 9300 series [u,dw,1]
   * 9420 series [c,d,1]
