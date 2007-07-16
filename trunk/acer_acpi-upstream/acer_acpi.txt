@@ -9,8 +9,8 @@ Acer Laptop ACPI Extras Driver
 ### WE WILL ACCEPT ABSOLUTELY NO RESPONSIBILITY.
 
 acer_acpi is a driver to allow you to control various aspects of your Acer
-laptop hardware using the Linux kernel, on Acer laptops that have the ACPI
-devices AMW0 or WMID (both are attached to HID device PNP0C14).
+laptop hardware using the Linux kernel, on Acer laptops that have an ACPI device
+with _HID PNP0C14 - the two supported devices so far are AMW0 and WMID.
 
 Background
 **********
@@ -108,15 +108,19 @@ but not WMID).
 supported (and some known unsupported hardware) here:
 http://code.google.com/p/aceracpi/wiki/SupportedHardware
 
-If your hardware is not on that list, please send in your DSDT (/proc/acpi/dsdt)
+If your Acer laptop is not on that list, please send in your DSDT to us.
 
 Credits
 *******
 
-Olaf Tauber, who did the real hard work when he developed acerhk
+* Olaf Tauber, who did the real hard work when he developed acerhk
 http://www.informatik.hu-berlin.de/~tauber/acerhk
-All the authors of laptop acpi modules in the kernel, whose work
-was an inspiration and a source of good code
-Mathieu Segaud, who solved the problem with having to modprobe the driver
+
+* All the authors of laptop acpi modules in the kernel, whose work was an
+inspiration and a source of good code
+
+* Mathieu Segaud, who solved the problem with having to modprobe the driver
 twice in early versions
-Jim Ramsay, who reverse engineered, and added support for the new WMID interface
+
+* Jim Ramsay, who reverse engineered, and added support for the new WMID
+interface
