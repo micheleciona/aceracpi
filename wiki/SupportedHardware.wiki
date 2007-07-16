@@ -22,15 +22,15 @@ All of our available DSDT dumps (translated to readable ASL) can be found in the
 
 Legend:
 
-  * [u] = Unconfirmed (Taken from the internet, please confirm if you have this model)
-  * [c] = Confirmed (We have been told that this works, or confirmed that it doesn't)
-  * [d] = DSDT available
-  * [dw] = DSDT wanted (Please submit yours to us)
-  * [n] = No WMI ACPI interface, will not support
-  * [r] = New WMI ACPI interface, requires reverse engineering (please contact us to help with this if you can)
-  * [k] = Requires a keyboard quirk to enable multimedia keys
-  * [1] = Version 1 (AMW0 interface)
-  * [2] = Version 2 (WMID interface)
+  * u = Unconfirmed (Taken from the internet, please confirm if you have this model)
+  * c = Confirmed (We have been told that this works, or confirmed that it doesn't)
+  * d = DSDT available
+  * dw = DSDT wanted (Please submit yours to us)
+  * n = No WMI ACPI interface, will not support
+  * r = New WMI ACPI interface, requires reverse engineering (please contact us to help with this if you can)
+  * k = Requires a keyboard quirk to enable multimedia keys
+  * 1 = Version 1 (AMW0 interface)
+  * 2 = Version 2 (WMID interface)
 
 == Supported ==
 
