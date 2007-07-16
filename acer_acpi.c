@@ -2,8 +2,8 @@
  *  acer_acpi.c - Acer Laptop ACPI Extras
  *
  *
- *  Copyright (C) 2005-2007  E.M. Smith
- *  Copyright (C) 2007       Carlos Corbacho <cathectic@gmail.com>
+ *  Copyright (C) 2005      E.M. Smith
+ *  Copyright (C) 2007      Carlos Corbacho <cathectic@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,35 +25,36 @@
  *
  *  Credits:
  *
- *  The authors of laptop ACPI modules in the kernel
- *              - their work was an inspiration and a source of good code
- *  Olaf Tauber
- *              - developer of acerhk, the inspiration to solve the 64-bit
- *                driver problem for [Mark Smith's] Aspire 5024.
- *  Mathieu Segaud
- *              - solved the ACPI problem that needed a double-modprobe in
- *                acer_acpi 0.2 and below.
- *  Jim Ramsay
- *              - Figured out and added support for WMID, added generic interface
- *                code
+ *  John Belmonte - the Toshiba ACPI driver I've adapted for this module.
+ *  Julien Lerouge & Karol Kozimor - ASUS Acpi driver authors.
+ *  Olaf Tauber - developer of acerhk, the inspiration to solve the 64-bit
+ *                driver problem for my Aspire 5024.
+ *  Mathieu Segaud - solved the ACPI problem that needed a double-modprobe
+ *                   in version 0.2 and below.
+ *  Carlos Corbacho - added initial status support for wireless/ mail/
+ *                    bluetooth, added module parameter support to turn
+ *                    hardware/ LEDs on and off at module loading (thanks
+ *                    again to acerhk for the inspiration)
+ *  Jim Ramsay - Figured out and added support for WMID interface
+ *
  */
+
+#define ACER_ACPI_VERSION	"0.6"
+#define PROC_INTERFACE_VERSION	1
+#define PROC_ACER		"acer"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/types.h>
+#include <linux/proc_fs.h>
 #include <linux/delay.h>
-#include <linux/backlight.h>
-#include <linux/platform_device.h>
-#include <linux/leds.h>
+#include <linux/suspend.h>
 #include <asm/uaccess.h>
-#include <linux/preempt.h>
-#include <linux/io.h>
-#include <linux/dmi.h>
 
 #include <acpi/acpi_drivers.h>
 
-MODULE_AUTHOR("Mark Smith, Carlos Corbacho");
+MODULE_AUTHOR("Mark Smith");
 MODULE_DESCRIPTION("Acer Laptop ACPI Extras Driver");
 MODULE_LICENSE("GPL");
 
@@ -65,14 +66,14 @@ MODULE_LICENSE("GPL");
  */
 #undef EXPERIMENTAL_INTERFACES
 
-#define ACER_LOGPREFIX "acer_acpi: "
-#define ACER_ERR KERN_ERR ACER_LOGPREFIX
-#define ACER_NOTICE KERN_NOTICE ACER_LOGPREFIX
-#define ACER_INFO KERN_INFO ACER_LOGPREFIX
+#define MY_LOGPREFIX "acer_acpi: "
+#define MY_ERR KERN_ERR MY_LOGPREFIX
+#define MY_NOTICE KERN_NOTICE MY_LOGPREFIX
+#define MY_INFO KERN_INFO MY_LOGPREFIX
 
 #define DEBUG(level, message...) { \
 	if (debug >= level) \
-		printk(KERN_DEBUG ACER_LOGPREFIX message);\
+		printk(KERN_DEBUG MY_LOGPREFIX message);\
 }
 
 /*
@@ -82,36 +83,15 @@ MODULE_LICENSE("GPL");
 #define ACER_MAX_BRIGHTNESS 0xf
 
 /*
- * These laptops are known to require a keyboard quirk to make their
- * multimedia keys emit scancodes
- */
-static struct dmi_system_id keyboard_dmi_table[] = {
-        {
-                .ident = "Acer Aspire 5680",
-                .matches = {
-			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
-			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5680     "),
-                },
-        },
-        { }
-};
-
-/*
- * Keyboard controller ports
- */
-#define ACER_KBD_STATUS_REG		0x64	/* Status register (R) */
-#define ACER_KBD_CNTL_REG		0x64	/* Controller command register (W) */
-#define ACER_KBD_DATA_REG		0x60	/* Keyboard data register (R/W) */
-
-/*
- * AMW0 EC Magic Number
- * This number is required for writing to ACPI
+ * Magic Number -
+ * Meaning is unknown - this number is required for writing to ACPI
  * (it's also used in acerhk when directly accessing the EC)
  */
 #define ACER_WRITE	0x9610
 
 /*
  * Bit masks for the old AMW0 interface
+ * These could vary between the particular interface
  */
 #define ACER_AMW0_WIRELESS_MASK  0x35
 #define ACER_AMW0_BLUETOOTH_MASK 0x34
@@ -152,24 +132,18 @@ static struct dmi_system_id keyboard_dmi_table[] = {
 #define ACER_CAP_ANY        (0xffffffff)
 
 /*
- * Interface type flags
- */
-#define ACER_AMW0 (1<<0)
-#define ACER_WMID (1<<1)
-
-/*
  * Presumed start states -
- * For the AMW0 interface, there is no way to know for certain what the start
- * state is for any of the devices (ACPI does not provide any methods or store
- * this anywhere, and a device state will persist across a reboot).
+ * For the old-style interfaces, there is no way to know for certain what the start state
+ * is for any of the parameters (ACPI does not provide any methods or store this
+ * anywhere). We therefore start with an unknown state (this is also how acerhk
+ * does it); we then change the status so that we are in a known state (I
+ * suspect LaunchManager on Windows does something similar, since the  wireless
+ * appears to turn off as soon as it launches).
  *
- * The driver therefore changes from the unknown state to a known state (off)
- * (Acer software just waits for the user to press the device button, as the
- * scancode for the button changes when the device state is changed).
- *
- * Also, we can't yet tell which features are enabled or disabled on a specific
- * model, just ranges; but we don't have enough information on the models, so we
- * currently unconditionally enable all supported devices on a given interface.
+ * Plus, we can't tell which features are enabled or disabled on a specific
+ * model, just ranges - e.g. The 5020 series can _support_ bluetooth; but the
+ * 5021 has no bluetooth, whilst the 5024 does.  However, the BIOS identifies
+ * both laptops as 5020 - we can't tell them apart!
  *
  * Basically the code works like this:
  *   - On init, any values specified on the commandline are set.
@@ -206,6 +180,20 @@ MODULE_PARM_DESC(brightness, "Set initial LCD backlight brightness");
 MODULE_PARM_DESC(threeg, "Set initial state of 3G hardware");
 MODULE_PARM_DESC(debug, "Debugging verbosity level (0=least 2=most)");
 
+typedef struct _ProcItem {
+	const char *name;
+	char *(*read_func) (char *, uint32_t);
+	unsigned long (*write_func) (const char *, unsigned long, uint32_t);
+	unsigned int capability;
+} ProcItem;
+
+struct acer_hotk {
+	struct acpi_device *device;
+	acpi_handle handle;
+};
+
+static struct proc_dir_entry *acer_proc_dir;
+
 static int is_valid_acpi_path(const char *methodName)
 {
 	acpi_handle handle;
@@ -218,12 +206,6 @@ static int is_valid_acpi_path(const char *methodName)
 /* Each low-level interface must define at least some of the following */
 typedef struct _Interface {
 	/*
-	 * The ACPI device type
-	 */
-	uint32_t type;
-
-
-	/*
 	 * The capabilities this interface provides
 	 * In the future, these can be removed/added at runtime when we have a
 	 * way of detecting what capabilities are /actually/ present on an
@@ -235,7 +217,7 @@ typedef struct _Interface {
 	 * Initializes an interface, should allocate the interface-specific
 	 * data
 	 */
-	void (*init) (struct _Interface*);
+	acpi_status (*init) (struct _Interface*);
 
 	/*
 	 * Frees an interface, should free the interface-specific data
@@ -267,23 +249,8 @@ static Interface *interface;
  * General interface convenience methods
  */
 
-static bool has_cap(uint32_t cap)
-{
-	if ((interface->capability & cap) != 0) {
-		return 1;
-	}
-	return 0;
-}
-
-static void interface_free(Interface *iface)
-{
-	/* Free our private data structure */
-	kfree(iface->data);
-}
-
 /* These *_via_u8 use the interface's *_u8 methods to emulate other gets/sets */
-static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface)
-{
+static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface) {
 	acpi_status status;
 	uint8_t result;
 
@@ -295,8 +262,7 @@ static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface)
 	return status;
 }
 
-static acpi_status set_bool_via_u8(bool value, uint32_t cap, Interface *iface)
-{
+static acpi_status set_bool_via_u8(bool value, uint32_t cap, Interface *iface) {
 	uint8_t v = value ? 1 : 0;
 
 	return iface->set_u8(v, cap, iface);
@@ -304,8 +270,7 @@ static acpi_status set_bool_via_u8(bool value, uint32_t cap, Interface *iface)
 
 /* General wrapper around the ACPI call */
 static acpi_status
-WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, struct acpi_buffer *out)
-{
+WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, struct acpi_buffer *out) {
 	struct acpi_object_list input;
 	union acpi_object params[3];
 	acpi_status status = AE_OK;
@@ -337,45 +302,6 @@ WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, s
 	return status;
 }
 
-/*
- * Keyboard quirk
- */
-
-/*
- * Wait for the keyboard controller to become ready
- */
-static int wait_kbd_write(void)
-{
-	int i = 0;
-	while ((inb(ACER_KBD_STATUS_REG) & 0x02) && (i < 10000)) {
-		udelay(50);
-		i++;
-	}
-	return -(i == 10000);
-}
-
-static void set_keyboard_quirk(void) {
-	preempt_disable();
-	if (!wait_kbd_write()) {
-		outb(0x59, ACER_KBD_CNTL_REG);
-		if (!wait_kbd_write())
-			outb(0x90, ACER_KBD_DATA_REG);
-	}
-	else {
-		printk(ACER_ERR "Unable to apply keyboard quirk\n");
-	}
-	preempt_enable_no_resched();
-}
-
-/*
- * Check if this system requires the keyboard quirk to enable multimedia keys
- */
-static bool keyboard_quirk(void)
-{
-        if (dmi_check_system(keyboard_dmi_table))
-		return 1;
-	return 0;
-}
 
 /*
  * Old interface (now known as the AMW0 interface)
@@ -406,13 +332,23 @@ static acpi_status WMAB_execute(WMAB_args * regbuf, struct acpi_buffer *result)
 	return status;
 }
 
-static void AMW0_init(Interface *iface)
-{
+static acpi_status AMW0_init(Interface *iface) {
+	WMAB_args args;
+	acpi_status status;
 	AMW0_Data *data;
 
 	/* Allocate our private data structure */
 	iface->data = kmalloc(sizeof(AMW0_Data), GFP_KERNEL);
 	data = (AMW0_Data*)iface->data;
+
+	/* 
+	 * Call the interface once so the BIOS knows it's to notify us of
+	 * events via PNP0C14
+	 */
+	memset(&args, 0, sizeof(WMAB_args));
+	args.eax = ACER_WRITE;
+	args.ebx = 0;
+	status = WMAB_execute(&args, NULL);
 
 	/* 
 	 * If the commandline doesn't specify these, we need to force them to
@@ -430,6 +366,13 @@ static void AMW0_init(Interface *iface)
 	 * acer_commandline_init will definitely set them.
 	 */
 	data->wireless = data->mailled = data->bluetooth = -1;
+
+	return status;
+}
+
+static void AMW0_free(Interface *iface) {
+	/* Free our private data structure */
+	kfree(iface->data);
 }
 
 static acpi_status AMW0_get_bool(bool *value, uint32_t cap, Interface *iface)
@@ -501,14 +444,13 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, Interface *iface)
 }
 
 static Interface AMW0_interface = {
-	.type = ACER_AMW0,
 	.capability = (
 		ACER_CAP_MAILLED |
 		ACER_CAP_WIRELESS |
 		ACER_CAP_BLUETOOTH
 	),
 	.init = AMW0_init,
-	.free = interface_free,
+	.free = AMW0_free,
 	.get_bool = AMW0_get_bool,
 	.set_bool = AMW0_set_bool,
 };
@@ -516,28 +458,10 @@ static Interface AMW0_interface = {
 /*
  * New interface (The WMID interface)
  */
-typedef struct _WMID_Data {
-	int mailled;
-	int wireless;
-	int bluetooth;
-#ifdef EXPERIMENTAL_INTERFACES
-	int threeg;
-#endif
-	int brightness;
-} WMID_Data;
-
-static void WMID_init(Interface *iface)
-{
-	WMID_Data *data;
-
-	/* Allocate our private data structure */
-	iface->data = kmalloc(sizeof(WMID_Data), GFP_KERNEL);
-	data = (WMID_Data*)iface->data;
-}
 
 static acpi_status
 WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
-{
+{       
 	struct acpi_buffer input = { (acpi_size)sizeof(uint32_t), (void*)(&in) };
 	struct acpi_buffer result = { ACPI_ALLOCATE_BUFFER, NULL };
 	union acpi_object *obj;
@@ -572,8 +496,7 @@ WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
 	return status;
 }
 
-static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface)
-{
+static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface) {
 	acpi_status status;
 	uint32_t result;
 	uint32_t methodId = 0;
@@ -602,8 +525,7 @@ static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface)
 	return status;
 }
 
-static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface)
-{
+static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface) {
 	uint32_t methodId = 0;
 
 	switch (cap) {
@@ -627,7 +549,6 @@ static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface)
 
 
 static Interface WMID_interface = {
-	.type = ACER_WMID,
 	.capability = (
 		ACER_CAP_WIRELESS
 		| ACER_CAP_BRIGHTNESS
@@ -636,47 +557,102 @@ static Interface WMID_interface = {
 		| ACER_CAP_THREEG
 #endif
 	),
-	.init = WMID_init,
-	.free = interface_free,
 	.get_bool = get_bool_via_u8,
 	.set_bool = set_bool_via_u8,
 	.get_u8 = WMID_get_u8,
 	.set_u8 = WMID_set_u8,
+	.data = NULL,
 };
+
+/*
+ * High-level Procfs file handlers 
+ */
+
+static int
+dispatch_read(char *page, char **start, off_t off, int count, int *eof,
+	      ProcItem * item)
+{
+	char *p = page;
+	int len;
+
+	if (off == 0)
+		p = item->read_func(p, item->capability);
+
+	/*
+	 * ISSUE: I don't understand this code 
+	 */
+	len = (p - page);
+	if (len <= off + count)
+		*eof = 1;
+	*start = page + off;
+	len -= off;
+	if (len > count)
+		len = count;
+	if (len < 0)
+		len = 0;
+	return len;
+}
+
+static int
+dispatch_write(struct file *file, const char __user * buffer,
+	       unsigned long count, ProcItem * item)
+{
+	int result;
+	char *tmp_buffer;
+
+	/*
+	 * Arg buffer points to userspace memory, which can't be accessed
+	 * directly.  Since we're making a copy, zero-terminate the
+	 * destination so that sscanf can be used on it safely. 
+	 */
+	tmp_buffer = kmalloc(count + 1, GFP_KERNEL);
+	if (copy_from_user(tmp_buffer, buffer, count)) {
+		result = -EFAULT;
+	} else {
+		tmp_buffer[count] = 0;
+		result = item->write_func(tmp_buffer, count, item->capability);
+	}
+	kfree(tmp_buffer);
+	return result;
+}
 
 /*
  * Generic Device (interface-independent)
  */
 
-static acpi_status get_bool(bool *value, uint32_t cap)
-{
+static acpi_status get_bool(bool *value, uint32_t cap) {
 	acpi_status status = AE_BAD_ADDRESS;
 	if (interface->get_bool)
 		status = interface->get_bool(value, cap, interface);
 	return status;
 }
 
-static acpi_status set_bool(int value, uint32_t cap)
-{
+static acpi_status set_bool(int value, uint32_t cap) {
 	acpi_status status = AE_BAD_PARAMETER;
 	if ((value == 0 || value == 1) &&
 			(interface->capability & cap)) {
+		if (interface->get_bool) {
+			/* If possible, only set if the value has changed */
+			bool actual;
+			status = interface->get_bool(&actual, cap, interface);
+			if (ACPI_SUCCESS(status) && actual == (bool)value)
+				return status;
+		}
 		if (interface->set_bool) 
 			status = interface->set_bool(value == 1, cap, interface);
 	}
 	return status;
+
 }
 
-static acpi_status get_u8(uint8_t *value, uint32_t cap)
-{
+static acpi_status get_u8(uint8_t *value, uint32_t cap) {
 	acpi_status status = AE_BAD_ADDRESS;
 	if (interface->get_u8)
 		status = interface->get_u8(value, cap, interface);
 	return status;
 }
 
-static acpi_status set_u8(uint8_t value, uint8_t min, uint8_t max, uint32_t cap)
-{
+static acpi_status set_u8(uint8_t value, uint8_t min, uint8_t max, uint32_t cap) {
 	acpi_status status = AE_BAD_PARAMETER;
 	if ((value >= min && value <= max) &&
 			(interface->capability & cap) ) {
@@ -694,7 +670,7 @@ static acpi_status set_u8(uint8_t value, uint8_t min, uint8_t max, uint32_t cap)
 }
 
 /* Each _u8 needs a small wrapper that sets the boundary values */
-static acpi_status set_brightness(uint8_t value) 
+static acpi_status set_brightness(uint8_t value)
 {
 	return set_u8(value, 0, ACER_MAX_BRIGHTNESS, ACER_CAP_BRIGHTNESS);
 }
@@ -716,295 +692,201 @@ static void acpi_commandline_init(void)
 }
 
 /*
- * Backlight device (UNTESTED!)
+ * Procfs interface
  */
-static struct backlight_device *acer_backlight_device;
-
-static int read_brightness(struct backlight_device *bd)
+static char *read_bool(char *p, uint32_t cap)
 {
-	uint8_t value;
-	get_u8(&value, ACER_CAP_BRIGHTNESS);
-	return value;
+	bool result;
+	acpi_status status = get_bool(&result, cap);
+	if (ACPI_SUCCESS(status))
+		p += sprintf(p, "%d\n", result);
+	else
+		p += sprintf(p, "Read error" );
+	return p;
 }
 
-static int update_bl_status(struct backlight_device *bd)
+static unsigned long write_bool(const char *buffer, unsigned long count, uint32_t cap)
 {
-	set_brightness(bd->props.brightness);
-	return 0;
-}
-
-static struct backlight_ops acer_backlight_ops = {
-	.get_brightness = read_brightness,
-	.update_status = update_bl_status,
-};
-
-static int acer_backlight_init(struct device *dev)
-{
-	struct backlight_device *bd;
-
-	DEBUG(1, "Loading backlight driver\n");
-	bd = backlight_device_register("acer_acpi", dev,
-				       NULL, &acer_backlight_ops);
-	if (IS_ERR(bd)) {
-		printk(ACER_ERR
-		       "Could not register Acer backlight device\n");
-		acer_backlight_device = NULL;
-		return PTR_ERR(bd);
-	}
-
-	acer_backlight_device = bd;
-
-	bd->props.max_brightness = ACER_MAX_BRIGHTNESS;
-	bd->props.brightness = read_brightness(NULL);
-	backlight_update_status(bd);
-	return 0;
-}
-
-static void acer_backlight_exit(void)
-{
-	backlight_device_unregister(acer_backlight_device);
-}
-
-/*
- * LED device (Mail LED only, no other LEDs known yet)
- */
-static void mail_led_set(struct led_classdev *led_cdev, enum led_brightness value)
-{
-	bool tmp = value;
-	set_bool(tmp, ACER_CAP_MAILLED);
-}
-
-static struct led_classdev mail_led = {
-	.name = "acer_acpi:mail",
-	.brightness_set = mail_led_set,
-};
-
-static void acer_led_init(struct device *dev)
-{
-	led_classdev_register(dev, &mail_led);
-}
-
-static void acer_led_exit(void)
-{
-	led_classdev_unregister(&mail_led);
-}
-
-/*
- * Platform device
- */
-
-#define show_set_bool(value, cap) \
-static ssize_t \
-show_bool_##value(struct device *dev, struct device_attribute *attr, \
-	char *buf) \
-{ \
-	bool result; \
-	acpi_status status = get_bool(&result, cap); \
-	if (ACPI_SUCCESS(status)) \
-		return sprintf(buf, "%d\n", result); \
-	return sprintf(buf, "Read error" ); \
-} \
-\
-static ssize_t \
-set_bool_##value(struct device *dev, struct device_attribute *attr, \
-	const char *buf, \
-	size_t count) \
-{ \
-	bool tmp = simple_strtoul(buf, NULL, 10); \
-	acpi_status status = set_bool(tmp, cap); \
-		if (ACPI_FAILURE(status)) \
-			return -EINVAL; \
-   	return count; \
-} \
-static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, \
-	show_bool_##value, set_bool_##value);
-
-show_set_bool(wireless, ACER_CAP_WIRELESS);
-show_set_bool(bluetooth, ACER_CAP_BLUETOOTH);
-#ifdef EXPERIMENTAL_INTERFACES
-show_set_bool(threeg, ACER_CAP_THREEG);
-#endif
-
-static struct platform_driver acer_platform_driver = {
-	.driver = {
-		.name = "acer_acpi",
-		.owner = THIS_MODULE,
-		}
-};
-
-static struct platform_device *acer_platform_device;
-
-static int remove_sysfs(struct platform_device *device)
-{
-	#define remove_device_file(value, cap) \
-	if (has_cap(cap)) \
-		device_remove_file(&device->dev, &dev_attr_##value);
-
-	remove_device_file(wireless, ACER_CAP_WIRELESS);
-	remove_device_file(bluetooth, ACER_CAP_BLUETOOTH);
-#ifdef EXPERIMENTAL_INTERFACES
-	remove_device_file(threeg, ACER_CAP_THREEG);
-#endif
-	return 0;
-}
-
-static int acer_platform_add(void)
-{
-	int retval = -ENOMEM;
-	platform_driver_register(&acer_platform_driver);
-
-	acer_platform_device = platform_device_alloc("acer_acpi", -1);
-
-	platform_device_add(acer_platform_device);
-
-	#define add_device_file(value, cap) \
-	if (has_cap(cap)) {\
-		retval = device_create_file(&acer_platform_device->dev, &dev_attr_##value);\
-		if (retval)\
-			goto error;\
-	}
-
-	add_device_file(wireless, ACER_CAP_WIRELESS);
-	add_device_file(bluetooth, ACER_CAP_BLUETOOTH);
-#ifdef EXPERIMENTAL_INTERFACES
-	add_device_file(threeg, ACER_CAP_THREEG);
-#endif
-	
-	return 0;
-
-	error:
-		remove_sysfs(acer_platform_device);
-	return retval;
-}
-
-static void acer_platform_remove(void)
-{
-	remove_sysfs(acer_platform_device);
-	platform_device_del(acer_platform_device);
-	platform_driver_unregister(&acer_platform_driver);
-}
-
-/*
- * ACPI driver
- */
-static int acer_acpi_add(struct acpi_device *device)
-{
-	struct device *dev = acpi_get_physical_device(device->handle);
-	acer_platform_add();
-	if (has_cap(ACER_CAP_MAILLED))
-		acer_led_init(dev);
-	if (has_cap(ACER_CAP_BRIGHTNESS))
-		acer_backlight_init(dev);
-	return 0;
-}
-
-static int acer_acpi_remove(struct acpi_device *device, int type)
-{
-	acer_platform_remove();
-
-	if (has_cap(ACER_CAP_MAILLED))
-		acer_led_exit();
-	if (has_cap(ACER_CAP_BRIGHTNESS))
-		acer_backlight_exit();
-	return 0;
-}
-
-#ifdef CONFIG_PM
-static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
-{
-	/* 
-	 * WMID fix for suspend-to-disk - save all current states now so we can
-	 * restore them on resume
-	 */
-	bool value;
-	uint8_t u8value;
-
-	#define save_bool_device(device, cap) \
-	if (has_cap(cap)) {\
-		get_bool(&value, cap);\
-		data->device = value;\
-	}
-
-	#define save_u8_device(device, cap) \
-	if (has_cap(cap)) {\
-		get_u8(&u8value, cap);\
-		data->device = u8value;\
-	}
-	
-	if (interface->type == ACER_WMID) {
-		WMID_Data *data = interface->data;
-		save_bool_device(wireless, ACER_CAP_WIRELESS);
-		save_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
-#ifdef EXPERIMENTAL_INTERFACES
-		save_bool_device(threeg, ACER_CAP_THREEG);
-#endif
-		save_u8_device(brightness, ACER_CAP_BRIGHTNESS);
-	}
-
-	return 0;
-}
-
-static int acer_acpi_resume(struct acpi_device *device)
-{
-	#define restore_bool_device(device, cap) \
-	if (has_cap(cap))\
-		set_bool(data->device, cap);\
+	int value;
 
 	/*
-	 * We must _always_ restore AMW0's values, otherwise the values
-	 * after suspend-to-disk are wrong
+	 * For now, we are still supporting the "enabled: %i" - this _will_ be deprecated in 0.7
 	 */
-	if (interface->type == ACER_AMW0) {
-		AMW0_Data *data = interface->data;
-	
-		restore_bool_device(wireless, ACER_CAP_WIRELESS);
-		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
-		restore_bool_device(mailled, ACER_CAP_MAILLED);
+	if ((sscanf(buffer, " enabled : %i", &value) == 1
+				|| sscanf(buffer, "%i", &value) == 1)) {
+		acpi_status status = set_bool(value, cap);
+		if (ACPI_FAILURE(status))
+			return -EINVAL;
+	} else {
+		return -EINVAL;
 	}
-	else if (interface->type == ACER_WMID) {
-		WMID_Data *data = interface->data;
+	return count;
+}
 
-		if (has_cap(ACER_CAP_BRIGHTNESS))
-			set_brightness((uint8_t)data->brightness);
-#ifdef EXPERIMENTAL_DEVICES
-		restore_bool_device(threeg, THREEG);
-#endif
-		restore_bool_device(wireless, ACER_CAP_WIRELESS);
-		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
+static char *read_u8(char *p, uint32_t cap)
+{
+	uint8_t result;
+	acpi_status status = get_u8(&result, cap);
+	if (ACPI_SUCCESS(status))
+		p += sprintf(p, "%u\n", result);
+	else
+		p += sprintf(p, "Read error" );
+	return p;
+}
+
+static unsigned long write_u8(const char *buffer, unsigned long count, uint32_t cap)
+{
+	int value;
+	acpi_status (*set_method)(uint8_t);
+
+	/* Choose the appropriate set_u8 wrapper here, based on the capability */
+	switch (cap) {
+		case ACER_CAP_BRIGHTNESS:
+			set_method = set_brightness;
+			break;
+		default:
+			return -EINVAL;
+	};
+
+	if (sscanf(buffer, "%i", &value) == 1) {
+		acpi_status status = (*set_method)(value);
+		if (ACPI_FAILURE(status))
+			return -EINVAL;
+	} else {
+		return -EINVAL;
+	}
+	return count;
+}
+
+static char *read_version(char *p, uint32_t cap)
+{
+	p += sprintf(p, "driver:                  %s\n", ACER_ACPI_VERSION);
+	p += sprintf(p, "proc_interface:          %d\n",
+			PROC_INTERFACE_VERSION);
+	return p;
+}
+
+ProcItem proc_items[] = {
+	{"mailled", read_bool, write_bool, ACER_CAP_MAILLED},
+	{"bluetooth", read_bool, write_bool, ACER_CAP_BLUETOOTH},
+	{"wireless", read_bool, write_bool, ACER_CAP_WIRELESS},
+	{"brightness", read_u8, write_u8, ACER_CAP_BRIGHTNESS},
+	{"threeg", read_bool, write_bool, ACER_CAP_THREEG},
+	{"version", read_version, NULL, ACER_CAP_ANY},
+	{NULL}
+};
+
+static acpi_status __init add_proc_entries(void)
+{
+	struct proc_dir_entry *proc;
+	ProcItem *item;
+
+	for (item = proc_items; item->name; ++item) {
+		/* 
+		 * Only add the proc file if the current interface actually
+		 * supports it
+		 */
+		if (interface->capability & item->capability) {
+			proc = create_proc_read_entry(item->name,
+					S_IFREG | S_IRUGO | S_IWUSR,
+					acer_proc_dir,
+					(read_proc_t *) dispatch_read,
+					item);
+			if (proc)
+				proc->owner = THIS_MODULE;
+			if (proc && item->write_func)
+				proc->write_proc = (write_proc_t *) dispatch_write;
+		}
 	}
 
-	/* Check if this laptop requires the keyboard quirk */
-	if (keyboard_quirk()) {
-		set_keyboard_quirk();
-		printk(ACER_INFO "Setting keyboard quirk to enable multimedia keys\n");
-	}
+	return AE_OK;
+}
+
+static acpi_status __exit remove_proc_entries(void)
+{
+	ProcItem *item;
+
+	for (item = proc_items; item->name; ++item)
+		remove_proc_entry(item->name, acer_proc_dir);
+	return AE_OK;
+}
+
+/*
+ * TODO: make this actually do useful stuff, if we ever see events 
+ */
+static void acer_acerkeys_notify(acpi_handle handle, u32 event, void *data)
+{
+	struct acer_hotk *hotk = (struct acer_hotk *)data;
+
+	if (!hotk)
+		return;
+	printk(MY_ERR "Got an event!! %X", event);
+
+	return;
+}
+
+static int acpi_acerkeys_add(struct acpi_device *device)
+{
+	struct acer_hotk *hotk = NULL;
+	acpi_status status = AE_OK;
+
+	if (!device)
+		return -EINVAL;
+
+	hotk =
+		(struct acer_hotk *)kmalloc(sizeof(struct acer_hotk), GFP_KERNEL);
+	if (!hotk)
+		return -ENOMEM;
+	memset(hotk, 0, sizeof(struct acer_hotk));
+	hotk->handle = device->handle;
+	strcpy(acpi_device_name(device), "Acer Laptop ACPI Extras");
+	strcpy(acpi_device_class(device), "hkey");
+	acpi_driver_data(device) = hotk;
+	hotk->device = device;
+
+	status = acpi_install_notify_handler(hotk->handle, ACPI_SYSTEM_NOTIFY,
+			acer_acerkeys_notify, hotk);
+	if (ACPI_FAILURE(status))
+		printk(MY_ERR "Error installing notify handler.\n");
+	return 0;
+}
+
+static int acpi_acerkeys_remove(struct acpi_device *device, int type)
+{
+	acpi_status status = 0;
+	struct acer_hotk *hotk = NULL;
+
+	if (!device || !acpi_driver_data(device))
+		return -EINVAL;
+	hotk = (struct acer_hotk *)acpi_driver_data(device);
+
+	status = acpi_remove_notify_handler(hotk->handle, ACPI_SYSTEM_NOTIFY,
+			acer_acerkeys_notify);
+	if (ACPI_FAILURE(status))
+		printk(MY_ERR "Error removing notify handler.\n");
+	kfree(hotk);
 
 	return 0;
 }
-#else
-#define acer_acpi_suspend NULL
-#define acer_acpi_resume NULL
-#endif
 
-static struct acpi_driver acer_acpi_driver = {
+static struct acpi_driver acpi_acerkeys = {
 	.name = "acer_acpi",
-	.class = "acer",
+	.class = "hotkey",
 	.ids = "PNP0C14",
 	.ops = {
-		.add = acer_acpi_add,
-		.remove = acer_acpi_remove,
-		.suspend = acer_acpi_suspend,
-		.resume = acer_acpi_resume,
-		},
+		.add = acpi_acerkeys_add,
+		.remove = acpi_acerkeys_remove,
+	},
 };
 
 static int __init acer_acpi_init(void)
 {
 	acpi_status status = AE_OK;
 
-	printk(ACER_INFO "Acer Laptop ACPI Extras\n");
+	printk(MY_INFO "Acer Laptop ACPI Extras version %s\n",
+			ACER_ACPI_VERSION);
 	if (acpi_disabled) {
-		printk(ACER_ERR "ACPI Disabled, unable to load.\n");
+		printk(MY_ERR "ACPI Disabled, unable to load.\n");
 		return -ENODEV;
 	}
 
@@ -1015,58 +897,82 @@ static int __init acer_acpi_init(void)
 	 *       acpi_bus driver?
 	 */
 	if (is_valid_acpi_path(AMW0_METHOD)) {
-		DEBUG(0, "Detected Acer AMW0 interface\n");
+		DEBUG(0, "Detected ACER AMW0 interface\n");
 		interface = &AMW0_interface;
-		/* .ids is case sensitive - and AMW0 has a mixed case device */
-		acer_acpi_driver.ids = "pnp0c14";
 	} else if (is_valid_acpi_path(WMID_METHOD)) {
-		DEBUG(0, "Detected Acer WMID interface\n");
+		DEBUG(0, "Detected ACER WMID interface\n");
 		interface = &WMID_interface;
 	} else {
-		printk(ACER_ERR "No or unsupported WMI interface, unable to load.\n");
+		printk(MY_ERR "No or unsupported WMI interface, unable to load.\n");
 		goto error_no_interface;
 	}
 
 	/* Now that we have a known interface, initialize it */
-	if (interface->init)
-		interface->init(interface);
-
-	/*
-	 * Register the driver
-	 *
-	 * TODO: Can we use the bus detection code to check for the interface
-	 *       or all or part of the method ID path?
-	 */
-	status = acpi_bus_register_driver(&acer_acpi_driver);
-	if (ACPI_FAILURE(status)) {
-		printk(ACER_ERR "Unable to register driver, aborting.\n");
-		goto error_acpi_bus_register;
+	if (interface->init) {
+		status = interface->init(interface);
+		if (ACPI_FAILURE(status)) {
+			printk(MY_ERR "Interface initialization failed.\n");
+			goto error_interface_init;
+		}
 	}
 
-	/* Check if this laptop requires the keyboard quirk */
-	if (keyboard_quirk()) {
-		set_keyboard_quirk();
-		printk(ACER_INFO "Setting keyboard quirk to enable multimedia keys\n");
+	/* Create the proc entries */
+	acer_proc_dir = proc_mkdir(PROC_ACER, acpi_root_dir);
+	if (!acer_proc_dir) {
+		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
+		goto error_proc_mkdir;
+	}
+
+	acer_proc_dir->owner = THIS_MODULE;
+	status = add_proc_entries();
+	if (ACPI_FAILURE(status)) {
+		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
+		goto error_proc_add;
+	}
+
+	/*
+	 * Register the hotkeys driver
+	 *
+	 * TODO: Does this do anything?  Can we use the bus detection code to
+	 *       check for the interface or all or part of the method ID path?
+	 */
+	status = acpi_bus_register_driver(&acpi_acerkeys);
+	if (ACPI_FAILURE(status)) {
+		printk(MY_ERR "Unable to register driver, aborting.\n");
+		goto error_acpi_bus_register;
 	}
 
 	/* Finally, override any initial settings with values from the commandline */
 	acpi_commandline_init();
 
-	return status;
+	return 0;
 
 error_acpi_bus_register:
+	remove_proc_entries();
+error_proc_add:
+	if (acer_proc_dir)
+		remove_proc_entry(PROC_ACER, acpi_root_dir);
+error_proc_mkdir:
+	if (interface->free)
+		interface->free(interface);
+error_interface_init:
 error_no_interface:
 	return -ENODEV;
 }
 
 static void __exit acer_acpi_exit(void)
 {
-	acpi_bus_unregister_driver(&acer_acpi_driver);
+	acpi_bus_unregister_driver(&acpi_acerkeys);
+
+	remove_proc_entries();
+
+	if (acer_proc_dir)
+		remove_proc_entry(PROC_ACER, acpi_root_dir);
 
 	if (interface->free)
 		interface->free(interface);
 
-	printk(ACER_INFO "Acer Laptop ACPI Extras unloaded\n");
+	printk(MY_INFO "Acer Laptop ACPI Extras unloaded\n");
 	return;
 }
 
