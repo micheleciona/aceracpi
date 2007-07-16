@@ -10,6 +10,8 @@ acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Sie
 
 Unfortunately, it is not possible to tell by the hardware alone which series require acer_acpi - different series use different chipsets (ATi and nVidia have both been seen). The chances are, if you need to install LaunchManager or Mobility Center on Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
 
+(On some of the supported systems, the wireless (and sometimes bluetooth) switches are hardware controlled; acer_acpi can still control these as well though).
+
 If you discover your hardware is supported by acer_acpi and it is not listed here, please send a dump of /proc/acpi/dsdt to me (cathectic(@)gmail.com), also listing the make and model of your laptop.
 
 If your hardware is not listed on either supported or unsupported, and acer_acpi does not load, please send me the dump of /proc/acpi/dsdt and the make and model anyway, as that way we can decide if acer_acpi just needs tweaking to work on your hardware, or so we can definitely rule out your hardware as compatible.
@@ -35,19 +37,19 @@ Legend:
 ===Acer===
 ====Aspire====
   * 3020 series [u,dw,1]
-  * 3610 series [u,dw,1]
+  * 3610 series [c,d,1]
   * 5020 series [c,d,1]
   * 5040 series [c,d,1]
   * 5050 series [c,d,2]
   * 5100 series [c,d,2]
-  * 5560 series [c,d,1] (Wireless is a hardware switch, not controlled by acer_acpi)
+  * 5560 series [c,d,1]
   * 5570 series [c,d,2]
   * 5580 series [c,d,2]
   * 5610 series [c,d,2]
   * 5650 series [c,d,2]
   * 5680 series [c,d,2,k]
   * 9300 series [u,dw,1]
-  * 9420 series [c,d,1] (Wireless is a hardware switch, not controlled by acer_acpi)
+  * 9420 series [c,d,1]
 
 ====Extensa====
   * 4010 series [c,d,2]
