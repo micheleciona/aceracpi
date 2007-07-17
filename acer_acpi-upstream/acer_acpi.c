@@ -68,8 +68,10 @@ MODULE_LICENSE("GPL");
 #define ACER_LOGPREFIX "acer_acpi: "
 
 #define DEBUG(level, message...) \
-	if (debug >= (level)) \
-		printk(KERN_DEBUG ACER_LOGPREFIX (message));
+	do { \
+		if (debug >= level) \
+		printk(KERN_DEBUG ACER_LOGPREFIX message); \
+	} while (0);
 
 /*
  * On the 5580, brightness values range from 0x0 to 0xf, inclusive.
@@ -853,8 +855,10 @@ static struct platform_device *acer_platform_device;
 static int remove_sysfs(struct platform_device *device)
 {
 	#define remove_device_file(value, cap) \
-	if (has_cap(cap)) \
-		device_remove_file(&device->dev, &dev_attr_##value);
+	do { \
+		if (has_cap(cap)) \
+			device_remove_file(&device->dev, &dev_attr_##value); \
+	} while (0);
 
 	remove_device_file(wireless, ACER_CAP_WIRELESS);
 	remove_device_file(bluetooth, ACER_CAP_BLUETOOTH);
@@ -874,12 +878,14 @@ static int acer_platform_add(void)
 	platform_device_add(acer_platform_device);
 
 	#define add_device_file(value, cap) \
-	if (has_cap(cap)) {\
-		retval = device_create_file(&acer_platform_device->dev, \
-			&dev_attr_##value);\
-		if (retval)\
-			goto error;\
-	}
+	do { \
+		if (has_cap(cap)) {\
+			retval = device_create_file(\
+			&acer_platform_device->dev, &dev_attr_##value);\
+			if (retval)\
+				goto error;\
+		} \
+	} while (0);
 
 	add_device_file(wireless, ACER_CAP_WIRELESS);
 	add_device_file(bluetooth, ACER_CAP_BLUETOOTH);
@@ -937,16 +943,20 @@ static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
 	uint8_t u8value;
 
 	#define save_bool_device(device, cap) \
-	if (has_cap(cap)) {\
-		get_bool(&value, cap);\
-		data->device = value;\
-	}
+	do { \
+		if (has_cap(cap)) {\
+			get_bool(&value, cap);\
+			data->device = value;\
+		} \
+	} while (0);
 
 	#define save_u8_device(device, cap) \
-	if (has_cap(cap)) {\
-		get_u8(&u8value, cap);\
-		data->device = u8value;\
-	}
+	do { \
+		if (has_cap(cap)) {\
+			get_u8(&u8value, cap);\
+			data->device = u8value;\
+		} \
+	} while (0);
 
 	if (interface->type == ACER_WMID) {
 		struct WMID_Data *data = interface->data;
@@ -964,8 +974,10 @@ static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
 static int acer_acpi_resume(struct acpi_device *device)
 {
 	#define restore_bool_device(device, cap) \
-	if (has_cap((cap)))\
-		set_bool(data->device, (cap));\
+	do { \
+		if (has_cap((cap)))\
+			set_bool(data->device, (cap));\
+	} while (0);
 
 	/*
 	 * We must _always_ restore AMW0's values, otherwise the values
