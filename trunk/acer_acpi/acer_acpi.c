@@ -439,17 +439,17 @@ static acpi_status AMW0_get_bool(bool *value, uint32_t cap, struct Interface *if
 
 	/* Currently no way to query the state, so just return the cached value */
 	switch (cap) {
-		case ACER_CAP_MAILLED:
-			*value = data->mailled;
-			break;
-		case ACER_CAP_WIRELESS:
-			*value = data->wireless;
-			break;
-		case ACER_CAP_BLUETOOTH:
-			*value = data->bluetooth;
-			break;
-		default:
-			return AE_BAD_ADDRESS;
+	case ACER_CAP_MAILLED:
+		*value = data->mailled;
+		break;
+	case ACER_CAP_WIRELESS:
+		*value = data->wireless;
+		break;
+	case ACER_CAP_BLUETOOTH:
+		*value = data->bluetooth;
+		break;
+	default:
+		return AE_BAD_ADDRESS;
 	}
 	return AE_OK;
 }
@@ -463,17 +463,17 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, struct Interface *ifa
 	args.ebx = value ? (1<<8) : 0;
 
 	switch (cap) {
-		case ACER_CAP_MAILLED:
-			args.ebx |= ACER_AMW0_MAILLED_MASK;
-			break;
-		case ACER_CAP_WIRELESS:
-			args.ebx |= ACER_AMW0_WIRELESS_MASK;
-			break;
-		case ACER_CAP_BLUETOOTH:
-			args.ebx |= ACER_AMW0_BLUETOOTH_MASK;
-			break;
-		default:
-			return AE_BAD_ADDRESS;
+	case ACER_CAP_MAILLED:
+		args.ebx |= ACER_AMW0_MAILLED_MASK;
+		break;
+	case ACER_CAP_WIRELESS:
+		args.ebx |= ACER_AMW0_WIRELESS_MASK;
+		break;
+	case ACER_CAP_BLUETOOTH:
+		args.ebx |= ACER_AMW0_BLUETOOTH_MASK;
+		break;
+	default:
+		return AE_BAD_ADDRESS;
 	}
 
 	/* Actually do the set */
@@ -486,15 +486,15 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, struct Interface *ifa
 	if (ACPI_SUCCESS(status)) {
 		struct AMW0_Data *data = iface->data;
 		switch (cap) {
-			case ACER_CAP_MAILLED:
-				data->mailled = value;
-				break;
-			case ACER_CAP_WIRELESS:
-				data->wireless = value;
-				break;
-			case ACER_CAP_BLUETOOTH:
-				data->bluetooth = value;
-				break;
+		case ACER_CAP_MAILLED:
+			data->mailled = value;
+			break;
+		case ACER_CAP_WIRELESS:
+			data->wireless = value;
+			break;
+		case ACER_CAP_BLUETOOTH:
+			data->bluetooth = value;
+			break;
 		}
 	}
 
@@ -579,20 +579,20 @@ static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, struct Interface *i
 	uint32_t methodId = 0;
 
 	switch (cap) {
-		case ACER_CAP_WIRELESS:
-			methodId = ACER_WMID_GET_WIRELESS_METHODID;
-			break;
-		case ACER_CAP_BLUETOOTH:
-			methodId = ACER_WMID_GET_BLUETOOTH_METHODID;
-			break;
-		case ACER_CAP_BRIGHTNESS:
-			methodId = ACER_WMID_GET_BRIGHTNESS_METHODID;
-			break;
-		case ACER_CAP_THREEG:
-			methodId = ACER_WMID_GET_THREEG_METHODID;
-			break;
-		default:
-			return AE_BAD_ADDRESS;
+	case ACER_CAP_WIRELESS:
+		methodId = ACER_WMID_GET_WIRELESS_METHODID;
+		break;
+	case ACER_CAP_BLUETOOTH:
+		methodId = ACER_WMID_GET_BLUETOOTH_METHODID;
+		break;
+	case ACER_CAP_BRIGHTNESS:
+		methodId = ACER_WMID_GET_BRIGHTNESS_METHODID;
+		break;
+	case ACER_CAP_THREEG:
+		methodId = ACER_WMID_GET_THREEG_METHODID;
+		break;
+	default:
+		return AE_BAD_ADDRESS;
 	}
 	status = WMI_execute_uint32(methodId, 0, &result);
 
@@ -606,20 +606,20 @@ static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, struct Interface *if
 	uint32_t methodId = 0;
 
 	switch (cap) {
-		case ACER_CAP_BRIGHTNESS:
-			methodId = ACER_WMID_SET_BRIGHTNESS_METHODID;
-			break;
-		case ACER_CAP_WIRELESS:
-			methodId = ACER_WMID_SET_WIRELESS_METHODID;
-			break;
-		case ACER_CAP_BLUETOOTH:
-			methodId = ACER_WMID_SET_BLUETOOTH_METHODID;
-			break;
-		case ACER_CAP_THREEG:
-			methodId = ACER_WMID_SET_THREEG_METHODID;
-			break;
-		default:
-			return AE_BAD_ADDRESS;
+	case ACER_CAP_BRIGHTNESS:
+		methodId = ACER_WMID_SET_BRIGHTNESS_METHODID;
+		break;
+	case ACER_CAP_WIRELESS:
+		methodId = ACER_WMID_SET_WIRELESS_METHODID;
+		break;
+	case ACER_CAP_BLUETOOTH:
+		methodId = ACER_WMID_SET_BLUETOOTH_METHODID;
+		break;
+	case ACER_CAP_THREEG:
+		methodId = ACER_WMID_SET_THREEG_METHODID;
+		break;
+	default:
+		return AE_BAD_ADDRESS;
 	}
 	return WMI_execute_uint32(methodId, (uint32_t)value, NULL);
 }
@@ -656,10 +656,6 @@ dispatch_read(char *page, char **start, off_t off, int count, int *eof,
 
 	if (off == 0)
 		p = item->read_func(p, item->capability);
-
-	/*
-	 * ISSUE: I don't understand this code 
-	 */
 	len = (p - page);
 	if (len <= off + count)
 		*eof = 1;
@@ -813,11 +809,11 @@ static unsigned long write_u8(const char *buffer, unsigned long count, uint32_t 
 
 	/* Choose the appropriate set_u8 wrapper here, based on the capability */
 	switch (cap) {
-		case ACER_CAP_BRIGHTNESS:
-			set_method = set_brightness;
-			break;
-		default:
-			return -EINVAL;
+	case ACER_CAP_BRIGHTNESS:
+		set_method = set_brightness;
+		break;
+	default:
+		return -EINVAL;
 	};
 
 	if (sscanf(buffer, "%i", &value) == 1) {
