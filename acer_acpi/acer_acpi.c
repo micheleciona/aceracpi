@@ -2,8 +2,8 @@
  *  acer_acpi.c - Acer Laptop ACPI Extras
  *
  *
- *  Copyright (C) 2005      E.M. Smith
- *  Copyright (C) 2007      Carlos Corbacho <cathectic@gmail.com>
+ *  Copyright (C) 2005-2007	E.M. Smith
+ *  Copyright (C) 2007		Carlos Corbacho <cathectic@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@
 #include <linux/types.h>
 #include <linux/proc_fs.h>
 #include <linux/delay.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/preempt.h>
 #include <linux/io.h>
 #include <linux/dmi.h>
@@ -210,12 +210,12 @@ MODULE_PARM_DESC(brightness, "Set initial LCD backlight brightness");
 MODULE_PARM_DESC(threeg, "Set initial state of 3G hardware");
 MODULE_PARM_DESC(debug, "Debugging verbosity level (0=least 2=most)");
 
-typedef struct _ProcItem {
+struct ProcItem {
 	const char *name;
 	char *(*read_func) (char *, uint32_t);
 	unsigned long (*write_func) (const char *, unsigned long, uint32_t);
 	unsigned int capability;
-} ProcItem;
+};
 
 static struct proc_dir_entry *acer_proc_dir;
 
@@ -229,7 +229,7 @@ static int is_valid_acpi_path(const char *methodName)
 }
 
 /* Each low-level interface must define at least some of the following */
-typedef struct _Interface {
+struct Interface {
 	/*
 	 * The ACPI device type
 	 */
@@ -247,12 +247,12 @@ typedef struct _Interface {
 	 * Initializes an interface, should allocate the interface-specific
 	 * data
 	 */
-	void (*init) (struct _Interface*);
+	void (*init) (struct Interface*);
 
 	/*
 	 * Frees an interface, should free the interface-specific data
 	 */
-	void (*free) (struct _Interface*);
+	void (*free) (struct Interface*);
 
 	/*
 	 * Gets and sets various data types.
@@ -260,20 +260,20 @@ typedef struct _Interface {
 	 *   Second parameter: Specific capability being requested
 	 *   Third paramater: Pointer to this interface
 	 */
-	acpi_status (*get_bool) (bool*, uint32_t, struct _Interface*);
-	acpi_status (*set_bool) (bool, uint32_t, struct _Interface*);
-	acpi_status (*get_u8) (uint8_t*, uint32_t, struct _Interface*);
-	acpi_status (*set_u8) (uint8_t, uint32_t, struct _Interface*);
+	acpi_status (*get_bool) (bool*, uint32_t, struct Interface*);
+	acpi_status (*set_bool) (bool, uint32_t, struct Interface*);
+	acpi_status (*get_u8) (uint8_t*, uint32_t, struct Interface*);
+	acpi_status (*set_u8) (uint8_t, uint32_t, struct Interface*);
 
 	/*
 	 * Interface-specific private data member.  Must *not* be touched by
 	 * anyone outside of this struct
 	 */
 	void *data;
-} Interface;
+};
 
 /* The static interface pointer, points to the currently detected interface */
-static Interface *interface;
+static struct Interface *interface;
 
 /*
  * General interface convenience methods
@@ -287,14 +287,14 @@ static bool has_cap(uint32_t cap)
 	return 0;
 }
 
-static void interface_free(Interface *iface)
+static void interface_free(struct Interface *iface)
 {
 	/* Free our private data structure */
 	kfree(iface->data);
 }
 
 /* These *_via_u8 use the interface's *_u8 methods to emulate other gets/sets */
-static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface) {
+static acpi_status get_bool_via_u8(bool *value, uint32_t cap, struct Interface *iface) {
 	acpi_status status;
 	uint8_t result;
 
@@ -306,7 +306,7 @@ static acpi_status get_bool_via_u8(bool *value, uint32_t cap, Interface *iface) 
 	return status;
 }
 
-static acpi_status set_bool_via_u8(bool value, uint32_t cap, Interface *iface) {
+static acpi_status set_bool_via_u8(bool value, uint32_t cap, struct Interface *iface) {
 	uint8_t v = value ? 1 : 0;
 
 	return iface->set_u8(v, cap, iface);
@@ -382,24 +382,24 @@ static bool keyboard_quirk(void)
 /*
  * Old interface (now known as the AMW0 interface)
  */
-typedef struct _WMAB_args {
+struct WMAB_args {
 	u32 eax;
 	u32 ebx;
 	u32 ecx;
 	u32 edx;
-} WMAB_args;
+};
 
-typedef struct _AMW0_Data {
+struct AMW0_Data {
 	int mailled;
 	int wireless;
 	int bluetooth;
-} AMW0_Data;
+};
 
-static acpi_status WMAB_execute(WMAB_args * regbuf, struct acpi_buffer *result)
+static acpi_status WMAB_execute(struct WMAB_args * regbuf, struct acpi_buffer *result)
 {
 	struct acpi_buffer input;
 	acpi_status status;
-	input.length = sizeof(WMAB_args);
+	input.length = sizeof(struct WMAB_args);
 	input.pointer = (u8*)regbuf;
 
 	status = WMI_execute( AMW0_METHOD, 1, &input, result);
@@ -408,12 +408,12 @@ static acpi_status WMAB_execute(WMAB_args * regbuf, struct acpi_buffer *result)
 	return status;
 }
 
-static void AMW0_init(Interface *iface) {
-	AMW0_Data *data;
+static void AMW0_init(struct Interface *iface) {
+	struct AMW0_Data *data;
 
 	/* Allocate our private data structure */
-	iface->data = kmalloc(sizeof(AMW0_Data), GFP_KERNEL);
-	data = (AMW0_Data*)iface->data;
+	iface->data = kmalloc(sizeof(struct AMW0_Data), GFP_KERNEL);
+	data = (struct AMW0_Data*)iface->data;
 
 	/* 
 	 * If the commandline doesn't specify these, we need to force them to
@@ -433,9 +433,9 @@ static void AMW0_init(Interface *iface) {
 	data->wireless = data->mailled = data->bluetooth = -1;
 }
 
-static acpi_status AMW0_get_bool(bool *value, uint32_t cap, Interface *iface)
+static acpi_status AMW0_get_bool(bool *value, uint32_t cap, struct Interface *iface)
 {
-	AMW0_Data *data = iface->data;
+	struct AMW0_Data *data = iface->data;
 
 	/* Currently no way to query the state, so just return the cached value */
 	switch (cap) {
@@ -454,9 +454,9 @@ static acpi_status AMW0_get_bool(bool *value, uint32_t cap, Interface *iface)
 	return AE_OK;
 }
 
-static acpi_status AMW0_set_bool(bool value, uint32_t cap, Interface *iface)
+static acpi_status AMW0_set_bool(bool value, uint32_t cap, struct Interface *iface)
 {
-	WMAB_args args;
+	struct WMAB_args args;
 	acpi_status status;
 
 	args.eax = ACER_WRITE;
@@ -484,7 +484,7 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, Interface *iface)
 	 * success
 	 */
 	if (ACPI_SUCCESS(status)) {
-		AMW0_Data *data = iface->data;
+		struct AMW0_Data *data = iface->data;
 		switch (cap) {
 			case ACER_CAP_MAILLED:
 				data->mailled = value;
@@ -501,7 +501,7 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, Interface *iface)
 	return status;
 }
 
-static Interface AMW0_interface = {
+static struct Interface AMW0_interface = {
 	.type = ACER_AMW0,
 	.capability = (
 		ACER_CAP_MAILLED |
@@ -517,7 +517,7 @@ static Interface AMW0_interface = {
 /*
  * New interface (The WMID interface)
  */
-typedef struct _WMID_Data {
+struct WMID_Data {
 	int mailled;
 	int wireless;
 	int bluetooth;
@@ -525,20 +525,20 @@ typedef struct _WMID_Data {
 	int threeg;
 #endif
 	int brightness;
-} WMID_Data;
+};
 
-static void WMID_init(Interface *iface)
+static void WMID_init(struct Interface *iface)
 {
-	WMID_Data *data;
+	struct WMID_Data *data;
 
 	/* Allocate our private data structure */
-	iface->data = kmalloc(sizeof(WMID_Data), GFP_KERNEL);
-	data = (WMID_Data*)iface->data;
+	iface->data = kmalloc(sizeof(struct WMID_Data), GFP_KERNEL);
+	data = (struct WMID_Data*)iface->data;
 }
 
 static acpi_status
 WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
-{       
+{
 	struct acpi_buffer input = { (acpi_size)sizeof(uint32_t), (void*)(&in) };
 	struct acpi_buffer result = { ACPI_ALLOCATE_BUFFER, NULL };
 	union acpi_object *obj;
@@ -573,7 +573,7 @@ WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
 	return status;
 }
 
-static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface) {
+static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, struct Interface *iface) {
 	acpi_status status;
 	uint32_t result;
 	uint32_t methodId = 0;
@@ -602,7 +602,7 @@ static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, Interface *iface) {
 	return status;
 }
 
-static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface) {
+static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, struct Interface *iface) {
 	uint32_t methodId = 0;
 
 	switch (cap) {
@@ -625,7 +625,7 @@ static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, Interface *iface) {
 }
 
 
-static Interface WMID_interface = {
+static struct Interface WMID_interface = {
 	.capability = (
 		ACER_CAP_WIRELESS
 		| ACER_CAP_BRIGHTNESS
@@ -649,7 +649,7 @@ static Interface WMID_interface = {
 
 static int
 dispatch_read(char *page, char **start, off_t off, int count, int *eof,
-	      ProcItem * item)
+	      struct ProcItem * item)
 {
 	char *p = page;
 	int len;
@@ -674,7 +674,7 @@ dispatch_read(char *page, char **start, off_t off, int count, int *eof,
 
 static int
 dispatch_write(struct file *file, const char __user * buffer,
-	       unsigned long count, ProcItem * item)
+	       unsigned long count, struct ProcItem * item)
 {
 	int result;
 	char *tmp_buffer;
@@ -838,7 +838,7 @@ static char *read_version(char *p, uint32_t cap)
 	return p;
 }
 
-ProcItem proc_items[] = {
+struct ProcItem proc_items[] = {
 	{"mailled", read_bool, write_bool, ACER_CAP_MAILLED},
 	{"bluetooth", read_bool, write_bool, ACER_CAP_BLUETOOTH},
 	{"wireless", read_bool, write_bool, ACER_CAP_WIRELESS},
@@ -851,7 +851,7 @@ ProcItem proc_items[] = {
 static acpi_status __init add_proc_entries(void)
 {
 	struct proc_dir_entry *proc;
-	ProcItem *item;
+	struct ProcItem *item;
 
 	for (item = proc_items; item->name; ++item) {
 		/* 
@@ -876,7 +876,7 @@ static acpi_status __init add_proc_entries(void)
 
 static acpi_status __exit remove_proc_entries(void)
 {
-	ProcItem *item;
+	struct ProcItem *item;
 
 	for (item = proc_items; item->name; ++item)
 		remove_proc_entry(item->name, acer_proc_dir);
@@ -905,7 +905,7 @@ static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
 	}
 	
 	if (interface->type == ACER_WMID) {
-		WMID_Data *data = interface->data;
+		struct WMID_Data *data = interface->data;
 		save_bool_device(wireless, ACER_CAP_WIRELESS);
 		save_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
 #ifdef EXPERIMENTAL_INTERFACES
@@ -928,14 +928,14 @@ static int acer_acpi_resume(struct acpi_device *device)
 	 * after suspend-to-disk are wrong
 	 */
 	if (interface->type == ACER_AMW0) {
-		AMW0_Data *data = interface->data;
+		struct AMW0_Data *data = interface->data;
 	
 		restore_bool_device(wireless, ACER_CAP_WIRELESS);
 		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
 		restore_bool_device(mailled, ACER_CAP_MAILLED);
 	}
 	else if (interface->type == ACER_WMID) {
-		WMID_Data *data = interface->data;
+		struct WMID_Data *data = interface->data;
 
 		if (has_cap(ACER_CAP_BRIGHTNESS))
 			set_brightness((uint8_t)data->brightness);
