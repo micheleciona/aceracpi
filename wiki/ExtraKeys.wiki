@@ -1,0 +1,80 @@
+#summary How to get the extra/ multimedia keys supported
+#labels Featured
+
+= Background =
+
+Keys (usually!) generate scan codes. The Linux kernel (in particular, atkbd.c) 
+maps the scan codes to keycodes. To be able to map X to the keys, or for them 
+to be recognised and do anything useful, you need a keycode.
+
+Standard keys (i.e. the "normal" 104 keys on your keyboard - e.g. A-Z, 0-9, etc) generate standard scancodes which have a standardised mapping to keycodes inside the kernel - so all works well there.
+
+However - many of the extra keys on Acer laptops do _not_ generate standard scancodes - hence you get errors in dmesg as the kernel does not know what keycodes these unknown scancodes should be mapped to.
+
+(Unlike some other laptops though, nearly all the keys on Acer laptops do generate scancodes, so we don't need extra kernel drivers to work them).
+
+= Problem: =
+
+Kernel policy is that this mapping of extra/ unknown keys should _not_ be done in the kernel (or by kernel drivers) - it should be done by user space.
+
+Until recently, there was no 'unified' place to do this - (U/K/X)buntu and SuSE adopted hotkey-setup, other distributions adopted different methods, or none at all. Or in some cases, users had to rely on doing this mapping themselves, leading to more inconsistency.
+
+= Solution =
+
+The [http://hughsient.livejournal.com/29730.html "Unfuck my keyboard"] project aims to move all this keyboard mapping into HAL, since HAL is a far better cross-platform solution to the problem (and since Slackware 12.0 now includes HAL, I (Carlos) am now happy to support such an initiative :-)
+
+HAL will use DMI data (aka ask the BIOS) to find out what your laptop is, then match this to user submitted data to map the scancodes-to-key codes appropriately. This functionality is not yet available in released versions of HAL (it will be in 0.5.10 and newer - there is also regularly updated build of the latest development HAL for Fedora users).
+
+What HAL needs is information from users on which keys to map scancodes to for different laptops.
+
+= What you need to do =
+
+If you've seen enough, you know what I'm doing and want to dive right in 
+(aka "Hurt me plenty"), then just go here (In particular, I reccommend looking at the Aspire 5020 as a good template):
+
+http://people.freedesktop.org/~hughsient/quirk/quirk-keymap-index.html
+
+If, on the other hand, you want to help out, but are not really very confident in submitting patches or all this XML stuff (aka "I'm too young to die"), then *I am happy to produce and submit patches to HAL on your behalf*. I will need you to e-mail the following to me (Carlos - cathectic(@)gmail.com):
+
+((U/K/X)buntu and SuSE users: If you have hotkey-setup installed, _please_ disable 
+or remove it and then reboot before doing this).
+
+1) Make and model of your laptop.
+
+2) The output of:
+
+dmidecode --string system-manufacturer
+dmidecode --string system-product-name
+
+3) And:
+
+A list of all the keys which generate error messages in 'dmesg', and the 
+scancode they report (just try all the keys, and all valid Fn+Key 
+combinations, and report back those that generate an atkbd.c message in 
+dmesg).
+
+e.g. On my laptop, pressing the wireless button (with wireless off) produces 
+this in dmesg:
+
+atkbd.c: Use 'setkeycodes e056 <keycode>' to make it known.
+
+The scancode I need from you is e056, so you would tell me something like:
+
+wireless button (wireless off) = e056
+
+Be aware that:
+
+The wireless and bluetooth buttons will probably report different scancodes 
+depending on whether you have enabled the device or not.
+
+Not all keys will generate error messages in dmesg (e.g. on my Aspire 5021, 
+the multimedia keys are already mapped to proper keycodes by the kernel, and 
+the brightness keys do not emit any scancodes).
+
+= X =
+
+The next step is to map the kernel key codes to X key codes for X (so you can use these keys with your favourite window manager/ desktop environment). I believe it is possible to submit just one generic X keymap for most Acer laptops (with HAL), but to help out here, for all the _other_ keys, please run 'xev' in a terminal, whilst running X (e.g. in Konsole). Press the key, and report back to me (Carlos - cathectic(@)gmail.com) the key  and its keycode.
+
+= Disclaimer =
+
+I am not a HAL developer - I just think it's about time someone came up with a proper solution to they non-functioning keys problem, and this is the best one of the lot (it's cross distribution and cross platform, and should work out of the box, since AFAIK all distributions enable HAL by default now).
