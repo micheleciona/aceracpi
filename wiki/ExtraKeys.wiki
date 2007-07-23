@@ -101,6 +101,17 @@ the brightness keys do not emit any scancodes).
 
 The next step is to map the kernel key codes to X key codes for X (so you can use these keys with your favourite window manager/ desktop environment). I believe it is possible to submit just one generic X keymap for most Acer laptops (with HAL), but to help out here, for all the _other_ keys, please run 'xev' in a terminal, whilst running X (e.g. in Konsole). Press the key, and report back to me (Carlos - cathectic(@)gmail.com) the key  and its keycode.
 
+On my Aspire 5020, I get the following:
+
+  * Fn+F4 (sleep) = keycode 223
+  * Fn+F8 (mute) = keycode 160
+  * Fn+Home (play/ pause) = keycode 162
+  * Fn+Pg Up (Stop) = keycode 164
+  * Fn+Pg Down (Back) = keycode 144
+  * Fn+Pg Up (Next) = keycode 153
+  * Fn+Up (Volume Up) = keycode 176
+  * FN+Down (Volume Down) = keycode 174
+
 = Disclaimer =
 
 I am not a HAL developer - I just think it's about time someone came up with a proper solution to they non-functioning keys problem, and this is the best one of the lot (it's cross distribution and cross platform, and should work out of the box, since AFAIK all distributions enable HAL by default now).
