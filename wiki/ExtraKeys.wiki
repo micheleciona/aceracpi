@@ -44,6 +44,7 @@ or remove it and then reboot before doing this).
 2) The output of:
 
 dmidecode --string system-manufacturer
+
 dmidecode --string system-product-name
 
 3) And:
