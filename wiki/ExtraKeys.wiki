@@ -63,6 +63,31 @@ The scancode I need from you is e056, so you would tell me something like:
 
 wireless button (wireless off) = e056
 
+For example, on my Aspire 5020 I get the following:
+
+  * Fn+F1 = e025
+  * Fn+F2 = e026
+  * Fn+F3 = e027
+  * Fn+F5 = e029
+  * Fn+F7 (turn touchpad off) = e072
+  * Fn+F7 (turn touchpad back on) = e071
+  * Euro sign (the one left of "up" arrow) = e033
+  * Dollar sign (the one right of "up" arrow) = e034
+  * Acer "e" button = e074
+  * Acer "P" button = e073
+
+These next four scancodes might be a bit different on your laptop because the 
+on/ off thing may not quite work the same, or the hardware isn't there but 
+you have the button (e.g. bluetooth - if the button is there, press it 
+anyway):
+
+  * Wireless button (wireless on) = e055
+  * Wireless button (wireless off) = e056
+  * Bluetooth button (bluetooth on) = e057
+  * Bluetooth button (bluetooth off) = e058
+
+(Also, on some newer laptops, apparently Fn+Left/ Right also generate scancodes)
+
 Be aware that:
 
 The wireless and bluetooth buttons will probably report different scancodes 
