@@ -38,7 +38,7 @@ Legend:
 ====Aspire====
   * 3020 series [c,dw,1]
   * 3610 series [c,d,1]
-  * 3620 series [c,dw,1 - maybe, need more information from a user]
+  * 3620 series [c,dw,1]
   * 5020 series [c,d,1]
   * 5040 series [c,d,1]
   * 5050 series [c,d,2]
