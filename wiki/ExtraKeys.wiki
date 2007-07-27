@@ -43,9 +43,10 @@ or remove it and then reboot before doing this).
 
 2) The output of:
 
+{{{
 dmidecode --string system-manufacturer
-
 dmidecode --string system-product-name
+}}}
 
 3) And:
 
@@ -55,14 +56,14 @@ combinations, and report back those that generate an atkbd.c message in
 dmesg).
 
 Ideally, this should be done in runlevel 3, to stop X or any X daemons from interfering with this. As root:
-
+{{{
 telinit 3
-
+}}}
 e.g. On my laptop, pressing the wireless button (with wireless off) produces 
 this in dmesg:
-
+{{{
 atkbd.c: Use 'setkeycodes e056 <keycode>' to make it known.
-
+}}}
 The scancode I need from you is e056, so you would tell me something like:
 
 wireless button (wireless off) = e056
@@ -107,6 +108,7 @@ The next step is to map the kernel key codes to X key codes for X (so you can us
 
 e.g. If you pressed the letter g you would get two events (a press and a release):
 
+{{{
 KeyPress event, serial 31, synthetic NO, window 0x1800001,
     root 0x102, subw 0x0, time 154391761, (1199,664), root:(1203,689),
     state 0x10, keycode 42 (keysym 0x67, g), same_screen YES,
@@ -119,8 +121,8 @@ KeyRelease event, serial 31, synthetic NO, window 0x1800001,
     state 0x10, keycode 42 (keysym 0x67, g), same_screen YES,
     XLookupString gives 1 bytes: (67) "g"
     XFilterEvent returns: False
-
-They keycode for g is 42.
+}}}
+They keycode for g is 42 (although please don't report they keycode for g to me - it's a standard keycode, and not very useful to me).
 
 On my Aspire 5020, I get the following:
 
