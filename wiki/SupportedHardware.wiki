@@ -59,7 +59,7 @@ Legend:
 
 ====Travelmate====
   * 2410 series [c,dw,1]
-  * 2490 series [c,d,2]
+  * 2490 series [c,d,2,k]
   * 3040 series [c,d,2]
   * 3620 series [c,d,2]
   * 4220 series [c,d,2]
