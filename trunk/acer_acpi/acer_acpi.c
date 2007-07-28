@@ -96,6 +96,13 @@ static struct dmi_system_id keyboard_dmi_table[] = {
 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5680     "),
                 },
         },
+        {
+                .ident = "Acer TravelMate 2490",
+                .matches = {
+			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 2490 "),
+                },
+        },
         { }
 };
 
