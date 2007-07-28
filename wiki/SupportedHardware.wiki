@@ -2,6 +2,10 @@
 #labels Featured
 
 = Supported Hardware =
+== WMID Users ==
+
+The Mail LED is not yet supported on your laptops by acer_acpi - we don't know how to drive it through ACPI yet. If you have a WMID laptop with Windows still installed, and would like to help out, please contact me (Carlos - cathectic(@)gmail.com)
+
 == Introduction ==
 
 To summarise: the driver only supports those laptops that present a WMI-ACPI interface, that can be manipulated via ACPI. So, any laptop that doesn't provide this interface, or any of the older Dritek type laptops are not supported (for the latter, use acerhk).
