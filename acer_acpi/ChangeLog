@@ -1,3 +1,33 @@
+2007-08-XX	Version 0.7
+
+* Removed "enabled: X" support
+
+* Added initial support for accessing extra devices/ information through the
+  Embedded Controller (limited to just the Aspire 5020 and TravelMate 2490 -
+  thanks to Petr Tomasek for the TravelMate 2490 support). To test this on
+  another laptop, use "force_series=5020" or "force_series=2490" and report
+  back the results. On the 5020 (AMW0), brightness and accurate reading of 
+  wireless and mail LED are supported. On the 2490 (WMID), mail LED is now
+  supported, as well as reading touchpad status. Also, it is possible to force
+  the fan on with both laptops by setting the temperature through ACPI.
+
+* Added suspend/ resume support (settings will be correctly stored on return
+  from suspend-to-RAM and suspend-to-disk).
+
+2007-07-17      Version 0.6.3
+
+* Fix Bash 3.2 bug in Makefile (really fixes *buntu build bug)
+
+2007-07-15      Version 0.6.2
+
+* Fix packaging bug from 0.6.1 (directory name accidentally
+  dropped acer_acpi-)
+
+2007-07-13	Version 0.6.1
+
+* Remove 2.4 kernel check, as it breaks *buntu systems
+  (acer_acpi is still 2.6 only)
+
 2007-07-06	Version 0.6
 
 * Ran code through lindent (Kernel coding style)
