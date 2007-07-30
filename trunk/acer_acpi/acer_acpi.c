@@ -39,7 +39,7 @@
  *
  */
 
-#define ACER_ACPI_VERSION	"0.6"
+#define ACER_ACPI_VERSION	"0.7"
 #define PROC_INTERFACE_VERSION	1
 #define PROC_ACER		"acer"
 
@@ -79,46 +79,39 @@ MODULE_LICENSE("GPL");
 }
 
 /*
- * On the 5580, brightness values range from 0x0 to 0xf, inclusive.
- * This may vary on other machines or other interfaces.
+ * Brightness values range from 0x0 to 0xf, inclusive.
  */
-#define ACER_MAX_BRIGHTNESS 0xf
+#define ACER_MAX_BRIGHTNESS 0xF
 
 /*
- * These laptops are known to require a keyboard quirk to make their
- * multimedia keys emit scancodes
+ * The maximum temperature one can set for fan control override.
+ * Doesn't propably make much sense if over 80 degrees celsius though...
  */
-static struct dmi_system_id keyboard_dmi_table[] = {
-        {
-                .ident = "Acer Aspire 5680",
-                .matches = {
-			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
-			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5680     "),
-                },
-        },
-        {
-                .ident = "Acer TravelMate 2490",
-                .matches = {
-			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
-			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 2490 "),
-                },
-        },
-        { }
+#define ACER_MAX_TEMPERATURE_OVERRIDE 150
+
+/*
+ * The following defines quirks to get some specific functions to work
+ * which are known to not be supported over ACPI (such as the mail LED
+ * on WMID based Acer's)
+ */
+struct acer_quirks {
+	const char *vendor, *model;
+	u16 quirks;
 };
 
 /*
  * Keyboard controller ports
  */
-#define ACER_KBD_STATUS_REG		0x64	/* Status register (R) */
-#define ACER_KBD_CNTL_REG		0x64	/* Controller command register (W) */
-#define ACER_KBD_DATA_REG		0x60	/* Keyboard data register (R/W) */
+#define ACER_KBD_STATUS_REG	0x64	/* Status register (R) */
+#define ACER_KBD_CNTL_REG	0x64	/* Controller command register (W) */
+#define ACER_KBD_DATA_REG	0x60	/* Keyboard data register (R/W) */
 
 /*
- * Magic Number -
- * Meaning is unknown - this number is required for writing to ACPI
+ * Magic Number
+ * Meaning is unknown - this number is required for writing to ACPI for AMW0
  * (it's also used in acerhk when directly accessing the EC)
  */
-#define ACER_WRITE	0x9610
+#define ACER_AMW0_WRITE	0x9610
 
 /*
  * Bit masks for the old AMW0 interface
@@ -160,6 +153,8 @@ static struct dmi_system_id keyboard_dmi_table[] = {
 #define ACER_CAP_BLUETOOTH  (1<<2)
 #define ACER_CAP_BRIGHTNESS (1<<3)
 #define ACER_CAP_THREEG     (1<<4)
+#define ACER_CAP_TOUCHPAD_READ	(1<<5)
+#define ACER_CAP_TEMPERATURE_OVERRIDE	(1<<6)
 #define ACER_CAP_ANY        (0xffffffff)
 
 /*
@@ -170,12 +165,8 @@ static struct dmi_system_id keyboard_dmi_table[] = {
 
 /*
  * Presumed start states -
- * For the old-style interfaces, there is no way to know for certain what the start state
- * is for any of the parameters (ACPI does not provide any methods or store this
- * anywhere). We therefore start with an unknown state (this is also how acerhk
- * does it); we then change the status so that we are in a known state (I
- * suspect LaunchManager on Windows does something similar, since the  wireless
- * appears to turn off as soon as it launches).
+ * On some AMW0 laptops, we do not yet know how to get the device status from
+ * the EC, so we must store this ourselves.
  *
  * Plus, we can't tell which features are enabled or disabled on a specific
  * model, just ranges - e.g. The 5020 series can _support_ bluetooth; but the
@@ -202,20 +193,26 @@ static int bluetooth = -1;
 static int mailled = -1;
 static int brightness = -1;
 static int threeg = -1;
+static int fan_temperature_override = -1;
 static int debug = 0;
+static int force_series;
 
 module_param(mailled, int, 0444);
 module_param(wireless, int, 0444);
 module_param(bluetooth, int, 0444);
 module_param(brightness, int, 0444);
 module_param(threeg, int, 0444);
+module_param(force_series, int, 0444);
+module_param(fan_temperature_override, int, 0444);
 module_param(debug, int, 0664);
 MODULE_PARM_DESC(wireless, "Set initial state of Wireless hardware");
 MODULE_PARM_DESC(bluetooth, "Set initial state of Bluetooth hardware");
 MODULE_PARM_DESC(mailled, "Set initial state of Mail LED");
 MODULE_PARM_DESC(brightness, "Set initial LCD backlight brightness");
 MODULE_PARM_DESC(threeg, "Set initial state of 3G hardware");
+MODULE_PARM_DESC(fan_temperature_override, "Set initial state of the 'FAN temperature-override'");
 MODULE_PARM_DESC(debug, "Debugging verbosity level (0=least 2=most)");
+MODULE_PARM_DESC(force_series, "Force a different laptop series for extra features (5020 or 2490)");
 
 struct ProcItem {
 	const char *name;
@@ -233,6 +230,28 @@ static int is_valid_acpi_path(const char *methodName)
 
 	status = acpi_get_handle(NULL, (char *)methodName, &handle);
 	return ACPI_SUCCESS(status);
+}
+
+/*
+ * Wait for the keyboard controller to become ready
+ */
+static int wait_kbd_write(void)
+{
+	int i = 0;
+	while ((inb(ACER_KBD_STATUS_REG) & 0x02) && (i < 10000)) {
+		udelay(50);
+		i++;
+	}
+	return -(i == 10000);
+}
+
+static void set_keyboard_quirk(void) {
+	preempt_disable();
+	if (!wait_kbd_write())
+		outb(0x59, ACER_KBD_CNTL_REG);
+	if (!wait_kbd_write())
+		outb(0x90, ACER_KBD_DATA_REG);
+	preempt_enable_no_resched();
 }
 
 /* Each low-level interface must define at least some of the following */
@@ -281,6 +300,129 @@ struct Interface {
 
 /* The static interface pointer, points to the currently detected interface */
 static struct Interface *interface;
+
+/*
+ * Embedded Controller quirks
+ * Some laptops require us to directly access the EC to either enable or query
+ * features that are not available through ACPI.
+ */
+
+struct quirk_entry {
+	int wireless;
+	int mailled;
+	int brightness;
+	int touchpad;
+	int temperature_override;
+	int mmkeys;
+};
+
+static struct quirk_entry *quirks;
+
+static void set_quirks(void)
+{
+	if (quirks->mailled) {
+		interface->capability |= ACER_CAP_MAILLED;
+		DEBUG(1, "Using EC direct-access quirk for mail LED\n");
+	}
+
+	if (quirks->touchpad) {
+		interface->capability |= ACER_CAP_TOUCHPAD_READ;
+		DEBUG(1, "Using EC direct-access quirk for reading touchpad status\n");
+	}
+
+	if (quirks->temperature_override) {
+		interface->capability |= ACER_CAP_TEMPERATURE_OVERRIDE;
+		DEBUG(1, "Using EC direct-access quirk for temperature override setting (fan)\n");
+	}
+
+	if (quirks->brightness) {
+		interface->capability |= ACER_CAP_BRIGHTNESS;
+		DEBUG(1, "Using EC direct-access quirk for backlight brightness\n");
+	}
+
+	if (quirks->mmkeys) {
+		set_keyboard_quirk();
+		printk(MY_INFO "Setting keyboard quirk to enable multimedia keys\n");
+	}
+}
+
+static int dmi_matched(struct dmi_system_id *dmi)
+{
+	quirks = dmi->driver_data;
+	return 0;
+}
+
+static struct quirk_entry quirk_unknown = {
+};
+
+static struct quirk_entry quirk_acer_aspire_5020 = {
+	.wireless = 1,
+	.mailled = 2,
+	.brightness = 1,
+	.temperature_override = 1,
+};
+
+static struct quirk_entry quirk_acer_aspire_5680 = {
+	.mmkeys = 1,
+};
+
+static struct quirk_entry quirk_acer_travelmate_2490 = {
+	.mmkeys = 1,
+	.mailled = 1,
+	.temperature_override = 1,
+};
+
+static struct dmi_system_id acer_quirks[] = {
+	{
+		.callback = dmi_matched,
+		.ident = "Acer Aspire 5020",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5020"),
+		},
+		.driver_data = &quirk_acer_aspire_5020,
+	},
+	{
+		.callback = dmi_matched,
+		.ident = "Acer Aspire 5680",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5680"),
+		},
+		.driver_data = &quirk_acer_aspire_5680,
+	},
+	{
+		.callback = dmi_matched,
+		.ident = "Acer TravelMate 2490",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 2490"),
+		},
+		.driver_data = &quirk_acer_travelmate_2490,
+	},
+	{}
+};
+
+/* Find which quirks are needed for a particular vendor/model pair */
+static void find_quirks(void)
+{
+	DEBUG (1, "Looking for quirks\n");
+	if (!force_series) {
+		dmi_check_system(acer_quirks);
+	} else if (force_series == 5020) {
+		DEBUG(0, "Forcing Acer Aspire 5020\n");
+		quirks = &quirk_acer_aspire_5020;
+	} else if (force_series == 2490) {
+		DEBUG(0, "Forcing Acer TravelMate 2490\n");
+		quirks = &quirk_acer_travelmate_2490;
+	}
+
+	if (quirks == NULL) {
+		DEBUG(1, "No quirks known for this laptop\n");
+		quirks = &quirk_unknown;
+	}
+	set_quirks();
+}
 
 /*
  * General interface convenience methods
@@ -354,35 +496,12 @@ WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, s
 }
 
 /*
- * Wait for the keyboard controller to become ready
+ *  Sends command to the EC
  */
-static int wait_kbd_write(void)
+static int send_ec_cmd(unsigned char cmd, unsigned char val)
 {
-	int i = 0;
-	while ((inb(ACER_KBD_STATUS_REG) & 0x02) && (i < 10000)) {
-		udelay(50);
-		i++;
-	}
-	return -(i == 10000);
-}
-
-static void set_keyboard_quirk(void) {
-	preempt_disable();
-	if (!wait_kbd_write())
-		outb(0x59, ACER_KBD_CNTL_REG);
-	if (!wait_kbd_write())
-		outb(0x90, ACER_KBD_DATA_REG);
-	preempt_enable_no_resched();
-}
-
-/*
- * Check if this system requires the keyboard quirk to enable multimedia keys
- */
-static bool keyboard_quirk(void)
-{
-        if (dmi_check_system(keyboard_dmi_table))
-		return 1;
-	return 0;
+	/* Extra 0 at end is for 2.6.22 */
+	return ec_transaction(cmd, &val, 1, NULL, 0, 1);
 }
 
 
@@ -437,20 +556,41 @@ static void AMW0_init(struct Interface *iface) {
 	 * Set the cached "current" values to impossible ones so that
 	 * acer_commandline_init will definitely set them.
 	 */
-	data->wireless = data->mailled = data->bluetooth = -1;
+	data->bluetooth = -1;
+
+	if (!quirks->wireless)
+		data->wireless = -1;
+	if (!quirks->mailled)
+		data->mailled = -1;
 }
 
 static acpi_status AMW0_get_bool(bool *value, uint32_t cap, struct Interface *iface)
 {
 	struct AMW0_Data *data = iface->data;
+	uint8_t result;
 
-	/* Currently no way to query the state, so just return the cached value */
+	/*
+	 * On some models, we can read these values from the EC. On others,
+	 * we use a stored value
+         */
 	switch (cap) {
 	case ACER_CAP_MAILLED:
-		*value = data->mailled;
+		if (quirks->mailled == 2) {
+			ec_read(0x0A, &result);
+			*value = (result >> 7) & 0x01;
+			return 0;
+		}
+		else
+			*value = data->mailled;
 		break;
 	case ACER_CAP_WIRELESS:
-		*value = data->wireless;
+		if (quirks->wireless == 1) {
+			ec_read(0x0A, &result);
+			*value = (result >> 2) & 0x01;
+			return 0;
+		}
+		else
+			*value = data->wireless;
 		break;
 	case ACER_CAP_BLUETOOTH:
 		*value = data->bluetooth;
@@ -466,7 +606,7 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, struct Interface *ifa
 	struct WMAB_args args;
 	acpi_status status;
 
-	args.eax = ACER_WRITE;
+	args.eax = ACER_AMW0_WRITE;
 	args.ebx = value ? (1<<8) : 0;
 
 	switch (cap) {
@@ -508,6 +648,32 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, struct Interface *ifa
 	return status;
 }
 
+static acpi_status AMW0_get_u8(uint8_t *value, uint32_t cap, struct Interface *iface) {
+	switch (cap) {
+	case ACER_CAP_BRIGHTNESS:
+		if (quirks->brightness == 1) {
+			ec_read(0x83, value);
+		}
+		break;
+	default:
+		return AE_BAD_ADDRESS;
+	}
+	return AE_OK;
+}
+
+static acpi_status AMW0_set_u8(uint8_t value, uint32_t cap, struct Interface *iface) {
+	switch (cap) {
+	case ACER_CAP_BRIGHTNESS:
+		if (quirks->brightness == 1) {
+			ec_write(0x83, value);
+		}
+		break;
+	default:
+		return AE_BAD_ADDRESS;
+	}
+	return AE_OK;
+}
+
 static struct Interface AMW0_interface = {
 	.type = ACER_AMW0,
 	.capability = (
@@ -519,6 +685,8 @@ static struct Interface AMW0_interface = {
 	.free = interface_free,
 	.get_bool = AMW0_get_bool,
 	.set_bool = AMW0_set_bool,
+	.get_u8 = AMW0_get_u8,
+	.set_u8 = AMW0_set_u8,
 };
 
 /*
@@ -598,6 +766,23 @@ static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, struct Interface *i
 	case ACER_CAP_THREEG:
 		methodId = ACER_WMID_GET_THREEG_METHODID;
 		break;
+	case ACER_CAP_MAILLED:
+		if (quirks->mailled == 1) {
+			ec_read(0x9f, value);
+			*value &= 0x01;
+			return 0;
+		}
+	case ACER_CAP_TOUCHPAD_READ:
+		if (quirks->touchpad == 1) {
+			ec_read(0x9e, value);
+			*value = (*value >> 3) & 0x01;
+			return 0;
+		}
+	case ACER_CAP_TEMPERATURE_OVERRIDE:
+		if (quirks->temperature_override == 1) {
+			ec_read(0xa9, value);
+			return 0;
+		}
 	default:
 		return AE_BAD_ADDRESS;
 	}
@@ -625,6 +810,16 @@ static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, struct Interface *if
 	case ACER_CAP_THREEG:
 		methodId = ACER_WMID_SET_THREEG_METHODID;
 		break;
+	case ACER_CAP_MAILLED:
+		if (quirks->mailled == 1) {
+			send_ec_cmd(0x59, value ? 0x92 : 0x93);
+			return 0;
+		}
+	case ACER_CAP_TEMPERATURE_OVERRIDE:
+		if (quirks->temperature_override == 1) {
+			ec_write(0xa9, value);
+			return 0;
+		}
 	default:
 		return AE_BAD_ADDRESS;
 	}
@@ -750,7 +945,12 @@ static acpi_status set_brightness(uint8_t value)
 	return set_u8(value, 0, ACER_MAX_BRIGHTNESS, ACER_CAP_BRIGHTNESS);
 }
 
-static void acpi_commandline_init(void)
+static acpi_status set_temperature_override(uint8_t value)
+{
+	return set_u8(value, 0, ACER_MAX_TEMPERATURE_OVERRIDE, ACER_CAP_TEMPERATURE_OVERRIDE);
+}
+
+static void __init acpi_commandline_init(void)
 {
 	DEBUG(1, "Commandline args: mailled(%d) wireless(%d) bluetooth(%d) brightness(%d)\n",
 		mailled, wireless, bluetooth, brightness);
@@ -763,6 +963,7 @@ static void acpi_commandline_init(void)
 	set_bool(wireless, ACER_CAP_WIRELESS);
 	set_bool(bluetooth, ACER_CAP_BLUETOOTH);
 	set_bool(threeg, ACER_CAP_THREEG);
+	set_temperature_override(fan_temperature_override);
 	set_brightness((uint8_t)brightness);
 }
 
@@ -819,6 +1020,9 @@ static unsigned long write_u8(const char *buffer, unsigned long count, uint32_t 
 	case ACER_CAP_BRIGHTNESS:
 		set_method = set_brightness;
 		break;
+	case ACER_CAP_TEMPERATURE_OVERRIDE:
+		set_method = set_temperature_override;
+		break;
 	default:
 		return -EINVAL;
 	};
@@ -841,13 +1045,23 @@ static char *read_version(char *p, uint32_t cap)
 	return p;
 }
 
+static char *read_interface(char *p, uint32_t cap)
+{
+	p += sprintf(p, "interface:               %s\n", (interface->type == ACER_AMW0 ) ? "AMW0": "WMID");
+	p += sprintf(p, "\n");
+	return p;
+}
+
 struct ProcItem proc_items[] = {
 	{"mailled", read_bool, write_bool, ACER_CAP_MAILLED},
 	{"bluetooth", read_bool, write_bool, ACER_CAP_BLUETOOTH},
 	{"wireless", read_bool, write_bool, ACER_CAP_WIRELESS},
 	{"brightness", read_u8, write_u8, ACER_CAP_BRIGHTNESS},
 	{"threeg", read_bool, write_bool, ACER_CAP_THREEG},
+	{"touchpad", read_bool, NULL, ACER_CAP_TOUCHPAD_READ},
+	{"fan_temperature_override", read_u8, write_u8, ACER_CAP_TEMPERATURE_OVERRIDE},
 	{"version", read_version, NULL, ACER_CAP_ANY},
+	{"interface", read_interface, NULL, ACER_CAP_ANY},
 	{NULL}
 };
 
@@ -950,7 +1164,7 @@ static int acer_acpi_resume(struct acpi_device *device)
 	}
 
 	/* Check if this laptop requires the keyboard quirk */
-	if (keyboard_quirk()) {
+	if (quirks->mmkeys) {
 		set_keyboard_quirk();
 		printk(MY_INFO "Setting keyboard quirk to enable multimedia keys\n");
 	}
@@ -958,11 +1172,33 @@ static int acer_acpi_resume(struct acpi_device *device)
 	return 0;
 }
 
+static int acer_acpi_add(struct acpi_device *device)
+{
+	/* Now that we have a known interface, initialize it */
+	DEBUG(1, "Initialising interface\n");
+	if (interface->init)
+		interface->init(interface);
+
+	/* Override any initial settings with values from the commandline */
+	acpi_commandline_init();
+
+	return 0;
+}
+
+static int acer_acpi_remove(struct acpi_device *device, int type)
+{
+	if (interface->free)
+		interface->free(interface);
+	return 0;
+}
+
 static struct acpi_driver acer = {
 	.name = "acer_acpi",
 	.class = "acer",
-	.ids = "PNP0C14",
+	.ids = "pnp0c14",
 	.ops = {
+		.add = acer_acpi_add,
+		.remove = acer_acpi_remove,
 		.suspend = acer_acpi_suspend,
 		.resume = acer_acpi_resume,
 	},
@@ -986,21 +1222,21 @@ static int __init acer_acpi_init(void)
 	 *       acpi_bus driver?
 	 */
 	if (is_valid_acpi_path(AMW0_METHOD)) {
-		DEBUG(0, "Detected ACER AMW0 interface\n");
-		interface = &AMW0_interface;
+		DEBUG(0, "Detected Acer AMW0 interface\n");
 		/* .ids is case sensitive - and AMW0 uses a strange mixed case */
 		acer.ids = "pnp0c14";
+		interface = &AMW0_interface;
 	} else if (is_valid_acpi_path(WMID_METHOD)) {
-		DEBUG(0, "Detected ACER WMID interface\n");
+		DEBUG(0, "Detected Acer WMID interface\n");
 		interface = &WMID_interface;
 	} else {
 		printk(MY_ERR "No or unsupported WMI interface, unable to load.\n");
 		goto error_no_interface;
 	}
 
-	/* Now that we have a known interface, initialize it */
-	if (interface->init)
-		interface->init(interface);
+	/* Find if this laptop requires any quirks */
+	DEBUG(1, "Finding quirks\n");
+	find_quirks();
 
 	/* Create the proc entries */
 	acer_proc_dir = proc_mkdir(PROC_ACER, acpi_root_dir);
@@ -1011,7 +1247,7 @@ static int __init acer_acpi_init(void)
 
 	acer_proc_dir->owner = THIS_MODULE;
 	status = add_proc_entries();
-	if (ACPI_FAILURE(status)) {
+	if (status) {
 		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
 		goto error_proc_add;
 	}
@@ -1023,19 +1259,11 @@ static int __init acer_acpi_init(void)
 	 *       or all or part of the method ID path?
 	 */
 	status = acpi_bus_register_driver(&acer);
-	if (ACPI_FAILURE(status)) {
+	printk(MY_INFO "Driver registered\n");
+	if (status) {
 		printk(MY_ERR "Unable to register driver, aborting.\n");
 		goto error_acpi_bus_register;
 	}
-
-	/* Check if this laptop requires the keyboard quirk */
-	if (keyboard_quirk()) {
-		set_keyboard_quirk();
-		printk(MY_INFO "Setting keyboard quirk to enable multimedia keys\n");
-	}
-
-	/* Finally, override any initial settings with values from the commandline */
-	acpi_commandline_init();
 
 	return 0;
 
@@ -1059,9 +1287,6 @@ static void __exit acer_acpi_exit(void)
 
 	if (acer_proc_dir)
 		remove_proc_entry(PROC_ACER, acpi_root_dir);
-
-	if (interface->free)
-		interface->free(interface);
 
 	printk(MY_INFO "Acer Laptop ACPI Extras unloaded\n");
 	return;
