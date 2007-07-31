@@ -61,7 +61,7 @@ Legend:
 ====Extensa====
   * 4010 series [c,d,2]
 
-==== TravelMate ====
+==== Travelmate ====
   * 2410 series [c,dw,1]
   * 2490 series [c,d,2,k]
   * 3040 series [c,d,2]
@@ -104,7 +104,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 ====Ferrari====
   * 4000 series [c,d,n]
 
-==== TravelMate ====
+==== Travelmate ====
   * C200 series [c,dw,n - has AMW0 device, but no WMAB method]
   * 220 series [c,d,n]
   * 290 series [c,dw,n]
@@ -126,4 +126,4 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 4150 series [c,d,n]
   * 4500 series [c,dw,n]
   * 4600 series [c,dw,n]
-  * 8100 series [c,dw,n]
+  * 8100 series [c,d,n]
