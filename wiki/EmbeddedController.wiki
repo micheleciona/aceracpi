@@ -20,7 +20,7 @@ e.g. the register at row B0 and column 0A is register 0xBA (0x is used to indica
 
 = AMW0 Laptops =
 
-Try loading acer_acpi with force_series=5020. Then try changing the brightness (you will need to be root to do this) or reading the values of the mail LED and the wireless.
+Try loading acer_acpi 0.7 with force_series=5020. Then try changing the brightness (you will need to be root to do this) or reading the values of the mail LED and the wireless.
 
 If these don't work, then you will need to look at the registers of the EC on your laptop to find the right ones.
 
