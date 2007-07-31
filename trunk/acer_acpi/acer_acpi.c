@@ -772,7 +772,7 @@ static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, struct Interface *i
 	case ACER_CAP_TOUCHPAD_READ:
 		if (quirks->touchpad == 1) {
 			ec_read(0x9e, value);
-			*value = (*value >> 3) & 0x01;
+			*value = 1 - ((*value >> 3) & 0x01);
 			return 0;
 		}
 	case ACER_CAP_TEMPERATURE_OVERRIDE:
