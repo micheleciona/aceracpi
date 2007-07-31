@@ -245,13 +245,19 @@ static int wait_kbd_write(void)
 	return -(i == 10000);
 }
 
-static void set_keyboard_quirk(void) {
+static void send_kbd_cmd(uint8_t cmd, uint8_t val)
+{
 	preempt_disable();
 	if (!wait_kbd_write())
-		outb(0x59, ACER_KBD_CNTL_REG);
+		outb(cmd, ACER_KBD_CNTL_REG);
 	if (!wait_kbd_write())
-		outb(0x90, ACER_KBD_DATA_REG);
+		outb(val, ACER_KBD_DATA_REG);
 	preempt_enable_no_resched();
+}
+
+static void set_keyboard_quirk(void)
+{
+	send_kbd_cmd(0x59, 0x90);
 }
 
 /* Each low-level interface must define at least some of the following */
@@ -370,6 +376,7 @@ static struct quirk_entry quirk_acer_travelmate_2490 = {
 	.mmkeys = 1,
 	.mailled = 1,
 	.temperature_override = 1,
+	.touchpad = 1,
 };
 
 static struct dmi_system_id acer_quirks[] = {
@@ -494,16 +501,6 @@ WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, s
 
 	return status;
 }
-
-/*
- *  Sends command to the EC
- */
-static int send_ec_cmd(unsigned char cmd, unsigned char val)
-{
-	/* Extra 0 at end is for 2.6.22 */
-	return ec_transaction(cmd, &val, 1, NULL, 0, 1);
-}
-
 
 /*
  * Old interface (now known as the AMW0 interface)
@@ -812,7 +809,7 @@ static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, struct Interface *if
 		break;
 	case ACER_CAP_MAILLED:
 		if (quirks->mailled == 1) {
-			send_ec_cmd(0x59, value ? 0x92 : 0x93);
+			send_kbd_cmd(0x59, value ? 0x92 : 0x93);
 			return 0;
 		}
 	case ACER_CAP_TEMPERATURE_OVERRIDE:
@@ -1048,7 +1045,6 @@ static char *read_version(char *p, uint32_t cap)
 static char *read_interface(char *p, uint32_t cap)
 {
 	p += sprintf(p, "interface:               %s\n", (interface->type == ACER_AMW0 ) ? "AMW0": "WMID");
-	p += sprintf(p, "\n");
 	return p;
 }
 
