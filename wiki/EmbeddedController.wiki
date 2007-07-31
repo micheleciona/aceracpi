@@ -1,0 +1,45 @@
+#summary Decoding and using the registers of the Embedded Controller
+
+= Introduction =
+
+The Embedded Controller (EC) is an interface to the lower level hardware on laptops. For the most part, acer_acpi has never touched this, as ACPI has provided standardised higher level ACPI methods to access this functionality instead.
+
+However, on quite a few laptops, it is now clear that to access certain devices, we are going to have to deal directly with the EC. The problem is that how the EC is wired varies from model to model, forcing us to find out about as the EC on as many models as we can.
+
+= Tools =
+
+[http://aceracpi.googlecode.com/svn/trunk/acer_ec/acer_ec.pl acer_ec.pl]
+
+acer_ec.pl is a Perl script which can dump the values of all the EC's registers. To do this, run (as root, as you need to access /dev/port):
+
+perl acer_ec.pl regs
+
+This will output all the EC registers and their current values on your laptop. To get the name of a register, you will need to combine the column and row names -
+
+e.g. the register at row B0 and column 0A is register 0xBA (0x is used to indicate this is a hexadecimal number).
+
+= AMW0 Laptops =
+
+Try loading acer_acpi with force_series=5020. Then try changing the brightness (you will need to be root to do this) or reading the values of the mail LED and the wireless.
+
+If these don't work, then you will need to look at the registers of the EC on your laptop to find the right ones.
+
+== Brightness ==
+
+This is the easiest to spot. 
+
+Turn the brightness up to maximum, and look at the EC register values. One of them should be 15. Turn the brightness down, and and the register will change to 14 (and so on). If you turn the brightness all the way down, it will reach 0.
+
+== Mail LED, Bluetooth and Wireless ==
+
+On the Aspire 5020, the status of these is all stored in one EC register - 0x0A. To extract a particular one, we can just apply a bitmask.
+
+There is no information yet on other laptops.
+
+The easiest way to test this is to turn on/ off wireless, bluetooth and the mail LED one at a time, and compare the registers before and after - look for just _one_ register that changes consistently.
+
+= WMID laptops =
+
+Coming soon:
+
+Mail LED
