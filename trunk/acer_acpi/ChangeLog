@@ -14,6 +14,8 @@
 * Added suspend/ resume support (settings will be correctly stored on return
   from suspend-to-RAM and suspend-to-disk).
 
+* Removed typdefs
+
 2007-07-17      Version 0.6.3
 
 * Fix Bash 3.2 bug in Makefile (really fixes *buntu build bug)

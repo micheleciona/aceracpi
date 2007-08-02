@@ -1,4 +1,4 @@
-This is acer_acpi version 0.6
+This is acer_acpi version 0.7
 
 ### THIS IS VERY MUCH A WORK IN PROGRESS.  NO WARRANTY GIVEN.  IF YOU
 ### BREAK YOUR LAPTOP USING THIS DRIVER, YOU GET TO KEEP THE PIECES AND
@@ -36,7 +36,10 @@ some of the following (varies between models):
 
 The syntax for each is the same:
 
-PLEASE NOTE: "enabled: X" is _deprecated_ - it will be dropped from 0.7
+PLEASE NOTE: "enabled: X" support has now been removed
+
+To read the status of a device (0=off, 1=on):
+cat /proc/acpi/acer/{device}
 
 To enable a feature:
 echo 1 > /proc/acpi/acer/{feature}
@@ -53,8 +56,8 @@ modprobe acer_acpi {feature}=0
 Where {feature} is either wireless, bluetooth, 3G, or mailled. (You can have 
 multiple {feature}'s specified on the modprobe line).
 
-For WMID laptops with a "brightness" option, you can write a value between 0 to
-15 (or 0x0 to 0xF).
+For laptops with a "brightness" option, you can write a value between 0 to 15 
+(or 0x0 to 0xF).
 
 To enable support for 3G devices on WMID, you will need to edit acer_acpi.c and 
 replace:
@@ -84,12 +87,8 @@ enable or disable entries in /proc/acpi/acer - this means that for
 hardware that isn't there, you can still read/ write the corresponding proc
 file.
 
-So: Just because it _says_ Bluetooth in /proc/acpi/acer, doesn't mean 
+So: Just because it _says_ "bluetooth" in /proc/acpi/acer, doesn't mean 
 you now actually have a Bluetooth device.
-
-Also: We do not store the status of the device when you hibernate. On AMW0,
-this will cause incorrect values to be returned from /proc (this is a known
-issue and is being worked on).
 
 Credits
 *******
@@ -109,7 +108,7 @@ Contact
 If you have problems with the driver, please file a bug on the website and
 include the following information:
 1. name of your laptop (e.g. Acer Aspire 5021)
-2. contents of your ACPI DSDT (this will require acpidump).  I can disassemble
+2. contents of your ACPI DSDT (cat /proc/acpi/dsdt).  I can disassemble
    it if necessary, so I'll accept the binaries.
 
 Please check http://code.google.com/p/aceracpi/wiki/SupportedHardware first to
