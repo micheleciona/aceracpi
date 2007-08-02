@@ -1120,7 +1120,7 @@ static struct backlight_ops acer_backlight_ops = {
 	.update_status = update_bl_status,
 };
 
-static int acer_backlight_init(struct device *dev)
+static int __init acer_backlight_init(struct device *dev)
 {
 	struct backlight_device *bd;
 
@@ -1142,7 +1142,7 @@ static int acer_backlight_init(struct device *dev)
 	return 0;
 }
 
-static void acer_backlight_exit(void)
+static void __exit acer_backlight_exit(void)
 {
 	backlight_device_unregister(acer_backlight_device);
 }
