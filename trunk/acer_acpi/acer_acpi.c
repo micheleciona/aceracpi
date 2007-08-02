@@ -39,7 +39,7 @@
  *
  */
 
-#define ACER_ACPI_VERSION	"0.7"
+#define ACER_ACPI_VERSION	"0.8"
 #define PROC_INTERFACE_VERSION	1
 #define PROC_ACER		"acer"
 
@@ -53,6 +53,7 @@
 #include <linux/preempt.h>
 #include <linux/io.h>
 #include <linux/dmi.h>
+#include <linux/backlight.h>
 
 #include <acpi/acpi_drivers.h>
 
@@ -1096,6 +1097,59 @@ static acpi_status __exit remove_proc_entries(void)
 	return AE_OK;
 }
 
+/*
+ * Backlight device (UNTESTED!)
+ */
+static struct backlight_device *acer_backlight_device;
+
+static int read_brightness(struct backlight_device *bd)
+{
+	uint8_t value;
+	get_u8(&value, ACER_CAP_BRIGHTNESS);
+	return value;
+}
+
+static int update_bl_status(struct backlight_device *bd)
+{
+	set_brightness(bd->props.brightness);
+	return 0;
+}
+
+static struct backlight_ops acer_backlight_ops = {
+	.get_brightness = read_brightness,
+	.update_status = update_bl_status,
+};
+
+static int acer_backlight_init(struct device *dev)
+{
+	struct backlight_device *bd;
+
+	DEBUG(1, "Loading backlight driver\n");
+	bd = backlight_device_register("acer_acpi", dev,
+				       NULL, &acer_backlight_ops);
+	if (IS_ERR(bd)) {
+		printk(MY_ERR
+		       "Could not register Acer backlight device\n");
+		acer_backlight_device = NULL;
+		return PTR_ERR(bd);
+	}
+
+	acer_backlight_device = bd;
+
+	bd->props.max_brightness = ACER_MAX_BRIGHTNESS;
+	bd->props.brightness = read_brightness(NULL);
+	backlight_update_status(bd);
+	return 0;
+}
+
+static void acer_backlight_exit(void)
+{
+	backlight_device_unregister(acer_backlight_device);
+}
+
+/*
+ * ACPI driver
+ */
 static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
 {
 	/* 
@@ -1170,21 +1224,16 @@ static int acer_acpi_resume(struct acpi_device *device)
 
 static int acer_acpi_add(struct acpi_device *device)
 {
-	/* Now that we have a known interface, initialize it */
-	DEBUG(1, "Initialising interface\n");
-	if (interface->init)
-		interface->init(interface);
-
-	/* Override any initial settings with values from the commandline */
-	acpi_commandline_init();
-
+	struct device *dev = acpi_get_physical_device(device->handle);
+	if (has_cap(ACER_CAP_BRIGHTNESS))
+		acer_backlight_init(dev);
 	return 0;
 }
 
 static int acer_acpi_remove(struct acpi_device *device, int type)
 {
-	if (interface->free)
-		interface->free(interface);
+	if (has_cap(ACER_CAP_BRIGHTNESS))
+		acer_backlight_exit();
 	return 0;
 }
 
@@ -1234,6 +1283,11 @@ static int __init acer_acpi_init(void)
 	DEBUG(1, "Finding quirks\n");
 	find_quirks();
 
+	/* Now that we have a known interface, initialize it */
+	DEBUG(1, "Initialising interface\n");
+	if (interface->init)
+		interface->init(interface);
+
 	/* Create the proc entries */
 	acer_proc_dir = proc_mkdir(PROC_ACER, acpi_root_dir);
 	if (!acer_proc_dir) {
@@ -1261,6 +1315,9 @@ static int __init acer_acpi_init(void)
 		goto error_acpi_bus_register;
 	}
 
+	/* Override any initial settings with values from the commandline */
+	acpi_commandline_init();
+
 	return 0;
 
 error_acpi_bus_register:
@@ -1283,6 +1340,9 @@ static void __exit acer_acpi_exit(void)
 
 	if (acer_proc_dir)
 		remove_proc_entry(PROC_ACER, acpi_root_dir);
+
+	if (interface->free)
+		interface->free(interface);
 
 	printk(MY_INFO "Acer Laptop ACPI Extras unloaded\n");
 	return;
