@@ -1,4 +1,5 @@
 #summary Decoding and using the registers of the Embedded Controller
+#labels Featured
 
 = Introduction =
 
@@ -43,3 +44,18 @@ The easiest way to test this is to turn on/ off wireless, bluetooth and the mail
 Coming soon:
 
 Mail LED
+
+(I don't have this hardware, so can't offer much guidance. acerhk can be used to toggle the Mail LED. On the TravelMate 2490, the status can be read from EC register 0x9F).
+
+= What I Need From You =
+
+If you manage to find something, please report back to me (Carlos - cathectic(@)gmail.com):
+
+1) Whatever you have discovered (e.g. brightness is controlled through EC register 0x83, or wireless status is stored in register 0x0A, 'on' is value X, 'off' is value Y)
+
+2) The output of:
+
+{{{
+dmidecode --string system-manufacturer
+dmidecode --string system-product-name
+}}}
