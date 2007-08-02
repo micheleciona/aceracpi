@@ -1098,7 +1098,7 @@ static acpi_status __exit remove_proc_entries(void)
 }
 
 /*
- * Backlight device (UNTESTED!)
+ * Backlight device
  */
 static struct backlight_device *acer_backlight_device;
 
