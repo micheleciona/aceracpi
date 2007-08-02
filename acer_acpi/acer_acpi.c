@@ -410,7 +410,7 @@ static struct dmi_system_id acer_quirks[] = {
 	{}
 };
 
-/* Find which quirks are needed for a particular vendor/model pair */
+/* Find which quirks are needed for a particular vendor/ model pair */
 static void find_quirks(void)
 {
 	DEBUG (1, "Looking for quirks\n");

@@ -1,3 +1,8 @@
+2007-08-01 Version 0.7
+	Dropped 'enabled: X' support
+	Added limited direct EC support for Aspire 5020 and TravelMate 2490
+	Fixed broken AMW0 values on hibernate
+
 2007-07-06 Version 0.6
 	Cleaned up code
 	Added WMID support
