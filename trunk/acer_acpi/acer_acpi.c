@@ -61,14 +61,6 @@ MODULE_AUTHOR("Mark Smith");
 MODULE_DESCRIPTION("Acer Laptop ACPI Extras Driver");
 MODULE_LICENSE("GPL");
 
-/*
- * Defining this enables the 3g interface on the new WMID interface.
- *
- * However, there are many reports of this not working (and no reports of it
- * working), so this is for experienced users only.
- */
-#undef EXPERIMENTAL_INTERFACES
-
 #define MY_LOGPREFIX "acer_acpi: "
 #define MY_ERR KERN_ERR MY_LOGPREFIX
 #define MY_NOTICE KERN_NOTICE MY_LOGPREFIX
@@ -555,6 +547,7 @@ static acpi_status WMAB_execute(struct WMAB_args * regbuf, struct acpi_buffer *r
 }
 
 static void AMW0_init(struct Interface *iface) {
+	bool help;
 	struct AMW0_Data *data;
 
 	/* Allocate our private data structure */
@@ -565,9 +558,9 @@ static void AMW0_init(struct Interface *iface) {
 	 * If the commandline doesn't specify these, we need to force them to
 	 * the default values
 	 */
-	if (mailled == -1)
+	if (mailled == -1 && !quirks->mailled)
 		mailled = ACER_DEFAULT_MAILLED;
-	if (wireless == -1)
+	if (wireless == -1 && !quirks->wireless)
 		wireless = ACER_DEFAULT_WIRELESS;
 	if (bluetooth == -1)
 		bluetooth = ACER_DEFAULT_BLUETOOTH;
@@ -577,11 +570,24 @@ static void AMW0_init(struct Interface *iface) {
 	 * acer_commandline_init will definitely set them.
 	 */
 	data->bluetooth = -1;
+	printk(MY_INFO "No EC data - bluetooth value when read will be a 'best guess'\n");
 
-	if (!quirks->wireless)
+	if (!quirks->wireless) {
+		help = 1;
+		printk(MY_INFO "No EC data - wireless value when read will be a 'best guess'\n");
 		data->wireless = -1;
-	if (!quirks->mailled)
+	}
+	if (!quirks->mailled) {
+		help = 1;
+		printk(MY_INFO "No EC data - mail LED value when read will be a 'best guess'\n");
 		data->mailled = -1;
+	}
+
+	if (help) {
+		printk(MY_INFO "Unknown Embedded Controller in laptop\n");
+		printk(MY_INFO "We need more data from your laptop to better support it\n");
+		printk(MY_INFO "Please see http://code.google.com/p/aceracpi/wiki/EmbeddedController on how to help\n");
+	}
 }
 
 static acpi_status AMW0_get_bool(bool *value, uint32_t cap, struct Interface *iface)
@@ -730,9 +736,7 @@ struct WMID_Data {
 	int mailled;
 	int wireless;
 	int bluetooth;
-#ifdef EXPERIMENTAL_INTERFACES
 	int threeg;
-#endif
 	int brightness;
 };
 
@@ -866,9 +870,7 @@ static struct Interface WMID_interface = {
 		ACER_CAP_WIRELESS
 		| ACER_CAP_BRIGHTNESS
 		| ACER_CAP_BLUETOOTH
-#ifdef EXPERIMENTAL_INTERFACES
 		| ACER_CAP_THREEG
-#endif
 	),
 	.init = WMID_init,
 	.free = interface_free,
@@ -984,7 +986,7 @@ static acpi_status set_temperature_override(uint8_t value)
 	return set_u8(value, 0, ACER_MAX_TEMPERATURE_OVERRIDE, ACER_CAP_TEMPERATURE_OVERRIDE);
 }
 
-static void __init acpi_commandline_init(void)
+static void __init acer_commandline_init(void)
 {
 	DEBUG(1, "Commandline args: mailled(%d) wireless(%d) bluetooth(%d) brightness(%d)\n",
 		mailled, wireless, bluetooth, brightness);
@@ -1211,9 +1213,7 @@ static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
 		struct WMID_Data *data = interface->data;
 		save_bool_device(wireless, ACER_CAP_WIRELESS);
 		save_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
-#ifdef EXPERIMENTAL_INTERFACES
 		save_bool_device(threeg, ACER_CAP_THREEG);
-#endif
 		save_u8_device(brightness, ACER_CAP_BRIGHTNESS);
 	}
 
@@ -1242,9 +1242,7 @@ static int acer_acpi_resume(struct acpi_device *device)
 
 		if (has_cap(ACER_CAP_BRIGHTNESS))
 			set_brightness((uint8_t)data->brightness);
-#ifdef EXPERIMENTAL_DEVICES
-		restore_bool_device(threeg, THREEG);
-#endif
+		restore_bool_device(threeg, ACER_CAP_THREEG);
 		restore_bool_device(wireless, ACER_CAP_WIRELESS);
 		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
 	}
@@ -1352,7 +1350,7 @@ static int __init acer_acpi_init(void)
 	}
 
 	/* Override any initial settings with values from the commandline */
-	acpi_commandline_init();
+	acer_commandline_init();
 
 	return 0;
 
