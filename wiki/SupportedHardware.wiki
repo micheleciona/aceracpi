@@ -2,9 +2,17 @@
 #labels Featured
 
 = Supported Hardware =
+==Bluetooth==
+
+Bluetooth is an _optional_ device. Most of the supported laptop series can _support_ a bluetooth module, but many don't have one. So, just because you have a bluetooth button, doesn't mean you actually have a bluetooth module in your laptop.
+
+Unfortunately, we can't detect this on acer_acpi (on WMID, if you try to write to this, you'll get an error message in dmesg. On AMW0, this will just fail silently).
+
 == WMID Users ==
 
-The Mail LED is not yet supported on your laptops by acer_acpi - we don't know how to drive it through ACPI yet. If you have a WMID laptop with Windows still installed, and would like to help out, please contact me (Carlos - cathectic(@)gmail.com)
+===Mail LED===
+
+This is only supported on the TravelMate 2490 by driving it through the Embedded Controller. To test this on another WMID laptop, load acer_acpi with "force_series=2490".
 
 ===3G===
 
