@@ -373,6 +373,10 @@ static struct quirk_entry quirk_acer_aspire_5680 = {
 	.mmkeys = 1,
 };
 
+static struct quirk_entry quirk_acer_aspire_9300 = {
+	.brightness = 2,
+};
+
 static struct quirk_entry quirk_acer_travelmate_2490 = {
 	.mmkeys = 1,
 	.mailled = 1,
@@ -407,6 +411,15 @@ static struct dmi_system_id acer_quirks[] = {
 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5680"),
 		},
 		.driver_data = &quirk_acer_aspire_5680,
+	},
+	{
+		.callback = dmi_matched,
+		.ident = "Acer Aspire 9300",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 9300"),
+		},
+		.driver_data = &quirk_acer_aspire_9300,
 	},
 	{
 		.callback = dmi_matched,
@@ -658,10 +671,17 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, struct Interface *ifa
 static acpi_status AMW0_get_u8(uint8_t *value, uint32_t cap, struct Interface *iface) {
 	switch (cap) {
 	case ACER_CAP_BRIGHTNESS:
-		if (quirks->brightness == 1) {
+		switch (quirks->brightness) {
+		case 1:
 			ec_read(0x83, value);
-		}
+			break;
+		case 2:
+			ec_read(0x85, value);
+			break;
+		default:
+			return AE_BAD_ADDRESS;
 		break;
+		}
 	default:
 		return AE_BAD_ADDRESS;
 	}
@@ -671,10 +691,17 @@ static acpi_status AMW0_get_u8(uint8_t *value, uint32_t cap, struct Interface *i
 static acpi_status AMW0_set_u8(uint8_t value, uint32_t cap, struct Interface *iface) {
 	switch (cap) {
 	case ACER_CAP_BRIGHTNESS:
-		if (quirks->brightness == 1) {
+		switch (quirks->brightness) {
+		case 1:
 			ec_write(0x83, value);
-		}
+			break;
+		case 2:
+			ec_write(0x85, value);
+			break;
+		default:
+			return AE_BAD_ADDRESS;
 		break;
+		}
 	default:
 		return AE_BAD_ADDRESS;
 	}
