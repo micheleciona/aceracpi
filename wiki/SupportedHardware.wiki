@@ -28,7 +28,7 @@ To summarise: the driver only supports those laptops that present a WMI-ACPI int
 
 acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Siemens laptop uses this interface as well.
 
-Unfortunately, it is not possible to tell by the hardware alone which series require acer_acpi - different series use different chipsets (ATi and nVidia have both been seen). The chances are, if you need to install LaunchManager or Mobility Center on Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
+Unfortunately, it is not possible to tell by the hardware alone which laptop series require acer_acpi. The chances are, if you need to install LaunchManager or Mobility Center addon in Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
 
 (On some of the supported systems, the wireless (and sometimes bluetooth) switches are hardware controlled; acer_acpi can still control these as well though).
 
