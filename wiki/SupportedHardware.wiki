@@ -55,7 +55,7 @@ Legend:
   * 5670 series [c,d,2]
   * 5680 series [c,d,2,k]
   * 5920 series [u,dw]
-  * 9300 series [u,dw,1]
+  * 9300 series [c,d,1]
   * 9420 series [c,d,1]
   * 9810 series [c,dw,2]
 
