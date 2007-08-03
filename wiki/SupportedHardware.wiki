@@ -6,6 +6,14 @@
 
 The Mail LED is not yet supported on your laptops by acer_acpi - we don't know how to drive it through ACPI yet. If you have a WMID laptop with Windows still installed, and would like to help out, please contact me (Carlos - cathectic(@)gmail.com)
 
+===3G===
+
+Unless you have specifically bought a 3G model, you don't have this built in.
+
+Acer lists such laptops twice - in the case of the Aspire 5680, there is the 'Aspire 5680-3G' and the 'Aspire 5680'. 
+
+Unless you have bought the -3G version of a laptop series, you don't have 3G (unfortunately, we can't tell them apart in acer_acpi).
+
 == Introduction ==
 
 To summarise: the driver only supports those laptops that present a WMI-ACPI interface, that can be manipulated via ACPI. So, any laptop that doesn't provide this interface, or any of the older Dritek type laptops are not supported (for the latter, use acerhk).
