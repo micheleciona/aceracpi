@@ -2,6 +2,10 @@
 
 * Added backlight to backlight driver
 
+* Restored 3G support - please note that on WMID laptops, if you try to write
+  to a device that you don't have, you _will_ get an ACPI error in dmesg (on
+  AMW0 this just fails silently).
+
 2007-08-02	Version 0.7
 
 * Removed "enabled: X" support

@@ -3,6 +3,16 @@
 	Added limited direct EC support for Aspire 5020 and TravelMate 2490
 	Fixed broken AMW0 values on hibernate
 
+2007-07-17 Version 0.6.3
+	Fix Bash 3.2 bug in Makefile (really fixes *buntu build bug)
+
+2007-07-15 Version 0.6.2
+	Fix packaging bug from 0.6.1 (directory name accidentally
+	dropped acer_acpi-)
+
+2007-07-13 Version 0.6.1
+	Remove 2.4 kernel check, as it breaks *buntu systems
+
 2007-07-06 Version 0.6
 	Cleaned up code
 	Added WMID support
