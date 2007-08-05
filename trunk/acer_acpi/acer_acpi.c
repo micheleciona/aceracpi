@@ -1023,11 +1023,7 @@ static unsigned long write_bool(const char *buffer, unsigned long count, uint32_
 {
 	int value;
 
-	/*
-	 * For now, we are still supporting the "enabled: %i" - this _will_ be deprecated in 0.7
-	 */
-	if ((sscanf(buffer, " enabled : %i", &value) == 1
-				|| sscanf(buffer, "%i", &value) == 1)) {
+	if (sscanf(buffer, "%i", &value) == 1)) {
 		acpi_status status = set_bool(value, cap);
 		if (ACPI_FAILURE(status))
 			return -EINVAL;
