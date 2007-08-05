@@ -1,7 +1,14 @@
+2007-XX-XX Version 0.8
+	Register backlight with backlight driver
+	Restored 3G support
+	Added new sysfs interface to /sys/devices/platform/acer_acpi
+	Added EC support for Aspire 5040
+
 2007-08-02 Version 0.7
 	Dropped 'enabled: X' support
 	Added limited direct EC support for Aspire 5020 and TravelMate 2490
 	Fixed broken AMW0 values on hibernate
+        Added new sysfs interface to /sys/devices/platform/acer_acpi
 
 2007-07-17 Version 0.6.3
 	Fix Bash 3.2 bug in Makefile (really fixes *buntu build bug)
