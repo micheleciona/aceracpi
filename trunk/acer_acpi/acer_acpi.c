@@ -1468,9 +1468,9 @@ static int __init acer_acpi_init(void)
 	 *       or all or part of the method ID path?
 	 */
 	status = acpi_bus_register_driver(&acer);
-	printk(MY_INFO "Driver registered\n");
+	DEBUG(1, "ACPI driver registered\n");
 	if (status) {
-		printk(MY_ERR "Unable to register driver, aborting.\n");
+		printk(MY_ERR "Unable to register ACPI driver, aborting.\n");
 		goto error_acpi_bus_register;
 	}
 
