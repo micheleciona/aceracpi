@@ -1023,7 +1023,7 @@ static unsigned long write_bool(const char *buffer, unsigned long count, uint32_
 {
 	int value;
 
-	if (sscanf(buffer, "%i", &value) == 1)) {
+	if (sscanf(buffer, "%i", &value) == 1) {
 		acpi_status status = set_bool(value, cap);
 		if (ACPI_FAILURE(status))
 			return -EINVAL;
@@ -1185,11 +1185,9 @@ static int __init acer_backlight_init(struct device *dev)
 	struct backlight_device *bd;
 
 	DEBUG(1, "Loading backlight driver\n");
-	bd = backlight_device_register("acer_acpi", dev,
-				       NULL, &acer_backlight_ops);
+	bd = backlight_device_register("acer_acpi", dev, NULL, &acer_backlight_ops);
 	if (IS_ERR(bd)) {
-		printk(MY_ERR
-		       "Could not register Acer backlight device\n");
+		printk(MY_ERR "Could not register Acer backlight device\n");
 		acer_backlight_device = NULL;
 		return PTR_ERR(bd);
 	}
@@ -1224,8 +1222,7 @@ show_bool_##value(struct device *dev, struct device_attribute *attr, \
 \
 static ssize_t \
 set_bool_##value(struct device *dev, struct device_attribute *attr, \
-	const char *buf, \
-	size_t count) \
+	const char *buf, size_t count) \
 { \
 	bool tmp = simple_strtoul(buf, NULL, 10); \
 	acpi_status status = set_bool(tmp, cap); \
@@ -1239,6 +1236,14 @@ static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, \
 show_set_bool(wireless, ACER_CAP_WIRELESS);
 show_set_bool(bluetooth, ACER_CAP_BLUETOOTH);
 show_set_bool(threeg, ACER_CAP_THREEG);
+
+static ssize_t show_interface(struct device *dev, struct device_attribute *attr,
+	char *buf)
+{
+	return sprintf(buf, "%s\n", (interface->type == ACER_AMW0 ) ? "AMW0": "WMID");
+}
+
+static DEVICE_ATTR(interface, S_IWUGO | S_IRUGO | S_IWUSR, show_interface, NULL);
 
 static struct platform_driver acer_platform_driver = {
 	.driver = {
@@ -1258,6 +1263,7 @@ static int remove_sysfs(struct platform_device *device)
 	remove_device_file(wireless, ACER_CAP_WIRELESS);
 	remove_device_file(bluetooth, ACER_CAP_BLUETOOTH);
 	remove_device_file(threeg, ACER_CAP_THREEG);
+	remove_device_file(interface, ACER_CAP_ANY);
 	return 0;
 }
 
@@ -1280,6 +1286,7 @@ static int acer_platform_add(void)
 	add_device_file(wireless, ACER_CAP_WIRELESS);
 	add_device_file(bluetooth, ACER_CAP_BLUETOOTH);
 	add_device_file(threeg, ACER_CAP_THREEG);
+	add_device_file(interface, ACER_CAP_ANY);
 	
 	return 0;
 
