@@ -1207,6 +1207,10 @@ static void __exit acer_backlight_exit(void)
 /*
  * Platform device
  */
+
+/*
+ * Read/ write bool sysfs macro
+ */
 #define show_set_bool(value, cap) \
 static ssize_t \
 show_bool_##value(struct device *dev, struct device_attribute *attr, \
@@ -1235,7 +1239,30 @@ static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, \
 show_set_bool(wireless, ACER_CAP_WIRELESS);
 show_set_bool(bluetooth, ACER_CAP_BLUETOOTH);
 show_set_bool(threeg, ACER_CAP_THREEG);
+show_set_bool(fan_temperature_override, ACER_CAP_TEMPERATURE_OVERRIDE);
 
+/*
+ * Read-only bool sysfs macro
+ */
+#define show_bool(value, cap) \
+static ssize_t \
+show_bool_##value(struct device *dev, struct device_attribute *attr, \
+	char *buf) \
+{ \
+	bool result; \
+	acpi_status status = get_bool(&result, cap); \
+	if (ACPI_SUCCESS(status)) \
+		return sprintf(buf, "%d\n", result); \
+	return sprintf(buf, "Read error" ); \
+} \
+static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, \
+	show_bool_##value, NULL);
+
+show_bool(touchpad, ACER_CAP_TOUCHPAD_READ);
+
+/*
+ * Read interface sysfs macro
+ */
 static ssize_t show_interface(struct device *dev, struct device_attribute *attr,
 	char *buf)
 {
@@ -1263,6 +1290,8 @@ static int remove_sysfs(struct platform_device *device)
 	remove_device_file(bluetooth, ACER_CAP_BLUETOOTH);
 	remove_device_file(threeg, ACER_CAP_THREEG);
 	remove_device_file(interface, ACER_CAP_ANY);
+	remove_device_file(fan_temperature_override, ACER_CAP_TEMPERATURE_OVERRIDE);
+	remove_device_file(touchpad, ACER_CAP_TOUCHPAD_READ);
 	return 0;
 }
 
@@ -1286,6 +1315,8 @@ static int acer_platform_add(void)
 	add_device_file(bluetooth, ACER_CAP_BLUETOOTH);
 	add_device_file(threeg, ACER_CAP_THREEG);
 	add_device_file(interface, ACER_CAP_ANY);
+	add_device_file(fan_temperature_override, ACER_CAP_TEMPERATURE_OVERRIDE);
+	add_device_file(touchpad, ACER_CAP_TOUCHPAD_READ);
 	
 	return 0;
 
