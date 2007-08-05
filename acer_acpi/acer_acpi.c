@@ -54,6 +54,8 @@
 #include <linux/io.h>
 #include <linux/dmi.h>
 #include <linux/backlight.h>
+#include <linux/leds.h>
+#include <linux/platform_device.h>
 
 #include <acpi/acpi_drivers.h>
 
@@ -1004,7 +1006,7 @@ static void __init acer_commandline_init(void)
 }
 
 /*
- * Procfs interface
+ * Procfs interface (deprecated)
  */
 static char *read_bool(char *p, uint32_t cap)
 {
@@ -1083,7 +1085,7 @@ static char *read_version(char *p, uint32_t cap)
 
 static char *read_interface(char *p, uint32_t cap)
 {
-	p += sprintf(p, "interface:               %s\n", (interface->type == ACER_AMW0 ) ? "AMW0": "WMID");
+	p += sprintf(p, "%s\n", (interface->type == ACER_AMW0 ) ? "AMW0": "WMID");
 	return p;
 }
 
@@ -1136,6 +1138,30 @@ static acpi_status __exit remove_proc_entries(void)
 }
 
 /*
+ * LED device (Mail LED only, no other LEDs known yet)
+ */
+static void mail_led_set(struct led_classdev *led_cdev, enum led_brightness value)
+{
+	bool tmp = value;
+	set_bool(tmp, ACER_CAP_MAILLED);
+}
+
+static struct led_classdev mail_led = {
+	.name = "acer_acpi:mail",
+	.brightness_set = mail_led_set,
+};
+
+static void acer_led_init(struct device *dev)
+{
+	led_classdev_register(dev, &mail_led);
+}
+
+static void acer_led_exit(void)
+{
+	led_classdev_unregister(&mail_led);
+}
+
+/*
  * Backlight device
  */
 static struct backlight_device *acer_backlight_device;
@@ -1183,6 +1209,94 @@ static int __init acer_backlight_init(struct device *dev)
 static void __exit acer_backlight_exit(void)
 {
 	backlight_device_unregister(acer_backlight_device);
+}
+
+/*
+ * Platform device
+ */
+#define show_set_bool(value, cap) \
+static ssize_t \
+show_bool_##value(struct device *dev, struct device_attribute *attr, \
+	char *buf) \
+{ \
+	bool result; \
+	acpi_status status = get_bool(&result, cap); \
+	if (ACPI_SUCCESS(status)) \
+		return sprintf(buf, "%d\n", result); \
+	return sprintf(buf, "Read error" ); \
+} \
+\
+static ssize_t \
+set_bool_##value(struct device *dev, struct device_attribute *attr, \
+	const char *buf, \
+	size_t count) \
+{ \
+	bool tmp = simple_strtoul(buf, NULL, 10); \
+	acpi_status status = set_bool(tmp, cap); \
+		if (ACPI_FAILURE(status)) \
+			return -EINVAL; \
+   	return count; \
+} \
+static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, \
+	show_bool_##value, set_bool_##value);
+
+show_set_bool(wireless, ACER_CAP_WIRELESS);
+show_set_bool(bluetooth, ACER_CAP_BLUETOOTH);
+show_set_bool(threeg, ACER_CAP_THREEG);
+
+static struct platform_driver acer_platform_driver = {
+	.driver = {
+		.name = "acer_acpi",
+		.owner = THIS_MODULE,
+		}
+};
+
+static struct platform_device *acer_platform_device;
+
+static int remove_sysfs(struct platform_device *device)
+{
+	#define remove_device_file(value, cap) \
+	if (has_cap(cap)) \
+		device_remove_file(&device->dev, &dev_attr_##value);
+
+	remove_device_file(wireless, ACER_CAP_WIRELESS);
+	remove_device_file(bluetooth, ACER_CAP_BLUETOOTH);
+	remove_device_file(threeg, ACER_CAP_THREEG);
+	return 0;
+}
+
+static int acer_platform_add(void)
+{
+	int retval = -ENOMEM;
+	platform_driver_register(&acer_platform_driver);
+
+	acer_platform_device = platform_device_alloc("acer_acpi", -1);
+
+	platform_device_add(acer_platform_device);
+
+	#define add_device_file(value, cap) \
+	if (has_cap(cap)) {\
+		retval = device_create_file(&acer_platform_device->dev, &dev_attr_##value);\
+		if (retval)\
+			goto error;\
+	}
+
+	add_device_file(wireless, ACER_CAP_WIRELESS);
+	add_device_file(bluetooth, ACER_CAP_BLUETOOTH);
+	add_device_file(threeg, ACER_CAP_THREEG);
+	
+	return 0;
+
+	error:
+		remove_sysfs(acer_platform_device);
+	return retval;
+}
+
+static void acer_platform_remove(void)
+{
+	remove_sysfs(acer_platform_device);
+	platform_device_del(acer_platform_device);
+	platform_driver_unregister(&acer_platform_driver);
 }
 
 /*
@@ -1259,15 +1373,23 @@ static int acer_acpi_resume(struct acpi_device *device)
 static int acer_acpi_add(struct acpi_device *device)
 {
 	struct device *dev = acpi_get_physical_device(device->handle);
+	if (has_cap(ACER_CAP_MAILLED))
+		acer_led_init(dev);
 	if (has_cap(ACER_CAP_BRIGHTNESS))
 		acer_backlight_init(dev);
+
+	acer_platform_add();
 	return 0;
 }
 
 static int acer_acpi_remove(struct acpi_device *device, int type)
 {
+	if (has_cap(ACER_CAP_MAILLED))
+		acer_led_exit();
 	if (has_cap(ACER_CAP_BRIGHTNESS))
 		acer_backlight_exit();
+
+	acer_platform_remove();
 	return 0;
 }
 

@@ -1,10 +1,14 @@
 2007-XX-XX	Version 0.8
 
-* Added backlight to backlight driver
+* Register backlight with backlight driver
 
 * Restored 3G support - please note that on WMID laptops, if you try to write
   to a device that you don't have, you _will_ get an ACPI error in dmesg (on
   AMW0 this just fails silently).
+
+* Added new sysfs interface to /sys/devices/platform/acer_acpi
+
+* Added EC support for Aspire 5040
 
 2007-08-02	Version 0.7
 
