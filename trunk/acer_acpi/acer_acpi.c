@@ -572,22 +572,21 @@ static void AMW0_init(struct Interface *iface) {
 	 * acer_commandline_init will definitely set them.
 	 */
 	data->bluetooth = -1;
-	printk(MY_INFO "No EC data - bluetooth value when read will be a 'best guess'\n");
+	printk(MY_INFO "No EC data for reading bluetooth - bluetooth value when read will be a 'best guess'\n");
 
 	if (!quirks->wireless) {
 		help = 1;
-		printk(MY_INFO "No EC data - wireless value when read will be a 'best guess'\n");
+		printk(MY_INFO "No EC data for reading wireless - wireless value when read will be a 'best guess'\n");
 		data->wireless = -1;
 	}
 	if (!quirks->mailled) {
 		help = 1;
-		printk(MY_INFO "No EC data - mail LED value when read will be a 'best guess'\n");
+		printk(MY_INFO "No EC data for reading mail LED - mail LED value when read will be a 'best guess'\n");
 		data->mailled = -1;
 	}
 
 	if (help) {
-		printk(MY_INFO "Unknown Embedded Controller in laptop\n");
-		printk(MY_INFO "We need more data from your laptop to better support it\n");
+		printk(MY_INFO "We need more data from your laptop's Embedded Controller (EC) to better support it\n");
 		printk(MY_INFO "Please see http://code.google.com/p/aceracpi/wiki/EmbeddedController on how to help\n");
 	}
 }
