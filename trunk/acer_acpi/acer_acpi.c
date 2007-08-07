@@ -211,8 +211,8 @@ MODULE_PARM_DESC(force_series, "Force a different laptop series for extra featur
 
 struct ProcItem {
 	const char *name;
-	char *(*read_func) (char *, uint32_t);
-	unsigned long (*write_func) (const char *, unsigned long, uint32_t);
+	char *(*read_func) (char *, u32);
+	unsigned long (*write_func) (const char *, unsigned long, u32);
 	unsigned int capability;
 };
 
@@ -240,7 +240,7 @@ static int wait_kbd_write(void)
 	return -(i == 10000);
 }
 
-static void send_kbd_cmd(uint8_t cmd, uint8_t val)
+static void send_kbd_cmd(u8 cmd, u8 val)
 {
 	preempt_disable();
 	if (!wait_kbd_write())
@@ -260,7 +260,7 @@ struct Interface {
 	/*
 	 * The ACPI device type
 	 */
-	uint32_t type;
+	u32 type;
 
 	/*
 	 * The capabilities this interface provides
@@ -268,7 +268,7 @@ struct Interface {
 	 * way of detecting what capabilities are /actually/ present on an
 	 * interface
 	 */
-	uint32_t capability;
+	u32 capability;
 
 	/*
 	 * Initializes an interface, should allocate the interface-specific
@@ -287,10 +287,10 @@ struct Interface {
 	 *   Second parameter: Specific capability being requested
 	 *   Third paramater: Pointer to this interface
 	 */
-	acpi_status (*get_bool) (bool*, uint32_t, struct Interface*);
-	acpi_status (*set_bool) (bool, uint32_t, struct Interface*);
-	acpi_status (*get_u8) (uint8_t*, uint32_t, struct Interface*);
-	acpi_status (*set_u8) (uint8_t, uint32_t, struct Interface*);
+	acpi_status (*get_bool) (bool*, u32, struct Interface*);
+	acpi_status (*set_bool) (bool, u32, struct Interface*);
+	acpi_status (*get_u8) (u8*, u32, struct Interface*);
+	acpi_status (*set_u8) (u8, u32, struct Interface*);
 
 	/*
 	 * Interface-specific private data member.  Must *not* be touched by
@@ -452,7 +452,7 @@ static void find_quirks(void)
  * General interface convenience methods
  */
 
-static bool has_cap(uint32_t cap)
+static bool has_cap(u32 cap)
 {
 	if ((interface->capability & cap) != 0) {
 		return 1;
@@ -467,9 +467,9 @@ static void interface_free(struct Interface *iface)
 }
 
 /* These *_via_u8 use the interface's *_u8 methods to emulate other gets/sets */
-static acpi_status get_bool_via_u8(bool *value, uint32_t cap, struct Interface *iface) {
+static acpi_status get_bool_via_u8(bool *value, u32 cap, struct Interface *iface) {
 	acpi_status status;
-	uint8_t result;
+	u8 result;
 
 	status = iface->get_u8(&result, cap, iface);
 
@@ -479,15 +479,15 @@ static acpi_status get_bool_via_u8(bool *value, uint32_t cap, struct Interface *
 	return status;
 }
 
-static acpi_status set_bool_via_u8(bool value, uint32_t cap, struct Interface *iface) {
-	uint8_t v = value ? 1 : 0;
+static acpi_status set_bool_via_u8(bool value, u32 cap, struct Interface *iface) {
+	u8 v = value ? 1 : 0;
 
 	return iface->set_u8(v, cap, iface);
 }
 
 /* General wrapper around the ACPI call */
 static acpi_status
-WMI_execute(char *methodPath, uint32_t methodId, const struct acpi_buffer *in, struct acpi_buffer *out) {
+WMI_execute(char *methodPath, u32 methodId, const struct acpi_buffer *in, struct acpi_buffer *out) {
 	struct acpi_object_list input;
 	union acpi_object params[3];
 	acpi_status status = AE_OK;
@@ -591,10 +591,10 @@ static void AMW0_init(struct Interface *iface) {
 	}
 }
 
-static acpi_status AMW0_get_bool(bool *value, uint32_t cap, struct Interface *iface)
+static acpi_status AMW0_get_bool(bool *value, u32 cap, struct Interface *iface)
 {
 	struct AMW0_Data *data = iface->data;
-	uint8_t result;
+	u8 result;
 
 	/*
 	 * On some models, we can read these values from the EC. On others,
@@ -628,7 +628,7 @@ static acpi_status AMW0_get_bool(bool *value, uint32_t cap, struct Interface *if
 	return AE_OK;
 }
 
-static acpi_status AMW0_set_bool(bool value, uint32_t cap, struct Interface *iface)
+static acpi_status AMW0_set_bool(bool value, u32 cap, struct Interface *iface)
 {
 	struct WMAB_args args;
 	acpi_status status;
@@ -675,7 +675,7 @@ static acpi_status AMW0_set_bool(bool value, uint32_t cap, struct Interface *ifa
 	return status;
 }
 
-static acpi_status AMW0_get_u8(uint8_t *value, uint32_t cap, struct Interface *iface) {
+static acpi_status AMW0_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 	switch (cap) {
 	case ACER_CAP_BRIGHTNESS:
 		switch (quirks->brightness) {
@@ -695,7 +695,7 @@ static acpi_status AMW0_get_u8(uint8_t *value, uint32_t cap, struct Interface *i
 	return AE_OK;
 }
 
-static acpi_status AMW0_set_u8(uint8_t value, uint32_t cap, struct Interface *iface) {
+static acpi_status AMW0_set_u8(u8 value, u32 cap, struct Interface *iface) {
 	switch (cap) {
 	case ACER_CAP_BRIGHTNESS:
 		switch (quirks->brightness) {
@@ -751,12 +751,12 @@ static void WMID_init(struct Interface *iface)
 }
 
 static acpi_status
-WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
+WMI_execute_uint32(u32 methodId, u32 in, u32 *out)
 {
-	struct acpi_buffer input = { (acpi_size)sizeof(uint32_t), (void*)(&in) };
+	struct acpi_buffer input = { (acpi_size)sizeof(u32), (void*)(&in) };
 	struct acpi_buffer result = { ACPI_ALLOCATE_BUFFER, NULL };
 	union acpi_object *obj;
-	uint32_t tmp;
+	u32 tmp;
 	acpi_status status;
 
 	status = WMI_execute(WMID_METHOD, methodId, &input, &result);
@@ -766,8 +766,8 @@ WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
 		return status;
 
 	obj = (union acpi_object *)result.pointer;
-	if (obj && obj->type == ACPI_TYPE_BUFFER && obj->buffer.length == sizeof(uint32_t)) {
-		tmp = *((uint32_t*)obj->buffer.pointer);
+	if (obj && obj->type == ACPI_TYPE_BUFFER && obj->buffer.length == sizeof(u32)) {
+		tmp = *((u32*)obj->buffer.pointer);
 		DEBUG(2, "  Out: 0x%08x\n", tmp);
 	} else {
 		tmp = 0;
@@ -787,10 +787,10 @@ WMI_execute_uint32(uint32_t methodId, uint32_t in, uint32_t *out)
 	return status;
 }
 
-static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, struct Interface *iface) {
+static acpi_status WMID_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 	acpi_status status;
-	uint32_t result;
-	uint32_t methodId = 0;
+	u32 result;
+	u32 methodId = 0;
 
 	switch (cap) {
 	case ACER_CAP_WIRELESS:
@@ -828,13 +828,13 @@ static acpi_status WMID_get_u8(uint8_t *value, uint32_t cap, struct Interface *i
 	status = WMI_execute_uint32(methodId, 0, &result);
 
 	if (ACPI_SUCCESS(status))
-		*value = (uint8_t)result;
+		*value = (u8)result;
 
 	return status;
 }
 
-static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, struct Interface *iface) {
-	uint32_t methodId = 0;
+static acpi_status WMID_set_u8(u8 value, u32 cap, struct Interface *iface) {
+	u32 methodId = 0;
 
 	switch (cap) {
 	case ACER_CAP_BRIGHTNESS:
@@ -862,7 +862,7 @@ static acpi_status WMID_set_u8(uint8_t value, uint32_t cap, struct Interface *if
 	default:
 		return AE_BAD_ADDRESS;
 	}
-	return WMI_execute_uint32(methodId, (uint32_t)value, NULL);
+	return WMI_execute_uint32(methodId, (u32)value, NULL);
 }
 
 
@@ -934,14 +934,14 @@ dispatch_write(struct file *file, const char __user * buffer,
  * Generic Device (interface-independent)
  */
 
-static acpi_status get_bool(bool *value, uint32_t cap) {
+static acpi_status get_bool(bool *value, u32 cap) {
 	acpi_status status = AE_BAD_ADDRESS;
 	if (interface->get_bool)
 		status = interface->get_bool(value, cap, interface);
 	return status;
 }
 
-static acpi_status set_bool(int value, uint32_t cap) {
+static acpi_status set_bool(int value, u32 cap) {
 	acpi_status status = AE_BAD_PARAMETER;
 	if ((value == 0 || value == 1) &&
 			(interface->capability & cap)) {
@@ -952,20 +952,20 @@ static acpi_status set_bool(int value, uint32_t cap) {
 
 }
 
-static acpi_status get_u8(uint8_t *value, uint32_t cap) {
+static acpi_status get_u8(u8 *value, u32 cap) {
 	acpi_status status = AE_BAD_ADDRESS;
 	if (interface->get_u8)
 		status = interface->get_u8(value, cap, interface);
 	return status;
 }
 
-static acpi_status set_u8(uint8_t value, uint8_t min, uint8_t max, uint32_t cap) {
+static acpi_status set_u8(u8 value, u8 min, u8 max, u32 cap) {
 	acpi_status status = AE_BAD_PARAMETER;
 	if ((value >= min && value <= max) &&
 			(interface->capability & cap) ) {
 		if (interface->get_u8) {
 			/* If possible, only set if the value has changed */
-			uint8_t actual;
+			u8 actual;
 			status = interface->get_u8(&actual, cap, interface);
 			if (ACPI_SUCCESS(status) && actual == value)
 				return status;
@@ -977,12 +977,12 @@ static acpi_status set_u8(uint8_t value, uint8_t min, uint8_t max, uint32_t cap)
 }
 
 /* Each _u8 needs a small wrapper that sets the boundary values */
-static acpi_status set_brightness(uint8_t value)
+static acpi_status set_brightness(u8 value)
 {
 	return set_u8(value, 0, ACER_MAX_BRIGHTNESS, ACER_CAP_BRIGHTNESS);
 }
 
-static acpi_status set_temperature_override(uint8_t value)
+static acpi_status set_temperature_override(u8 value)
 {
 	return set_u8(value, 0, ACER_MAX_TEMPERATURE_OVERRIDE, ACER_CAP_TEMPERATURE_OVERRIDE);
 }
@@ -1001,13 +1001,13 @@ static void __init acer_commandline_init(void)
 	set_bool(bluetooth, ACER_CAP_BLUETOOTH);
 	set_bool(threeg, ACER_CAP_THREEG);
 	set_temperature_override(fan_temperature_override);
-	set_brightness((uint8_t)brightness);
+	set_brightness((u8)brightness);
 }
 
 /*
  * Procfs interface (deprecated)
  */
-static char *read_bool(char *p, uint32_t cap)
+static char *read_bool(char *p, u32 cap)
 {
 	bool result;
 	acpi_status status = get_bool(&result, cap);
@@ -1018,7 +1018,7 @@ static char *read_bool(char *p, uint32_t cap)
 	return p;
 }
 
-static unsigned long write_bool(const char *buffer, unsigned long count, uint32_t cap)
+static unsigned long write_bool(const char *buffer, unsigned long count, u32 cap)
 {
 	int value;
 
@@ -1032,9 +1032,9 @@ static unsigned long write_bool(const char *buffer, unsigned long count, uint32_
 	return count;
 }
 
-static char *read_u8(char *p, uint32_t cap)
+static char *read_u8(char *p, u32 cap)
 {
-	uint8_t result;
+	u8 result;
 	acpi_status status = get_u8(&result, cap);
 	if (ACPI_SUCCESS(status))
 		p += sprintf(p, "%u\n", result);
@@ -1043,10 +1043,10 @@ static char *read_u8(char *p, uint32_t cap)
 	return p;
 }
 
-static unsigned long write_u8(const char *buffer, unsigned long count, uint32_t cap)
+static unsigned long write_u8(const char *buffer, unsigned long count, u32 cap)
 {
 	int value;
-	acpi_status (*set_method)(uint8_t);
+	acpi_status (*set_method)(u8);
 
 	/* Choose the appropriate set_u8 wrapper here, based on the capability */
 	switch (cap) {
@@ -1070,7 +1070,7 @@ static unsigned long write_u8(const char *buffer, unsigned long count, uint32_t 
 	return count;
 }
 
-static char *read_version(char *p, uint32_t cap)
+static char *read_version(char *p, u32 cap)
 {
 	p += sprintf(p, "driver:                  %s\n", ACER_ACPI_VERSION);
 	p += sprintf(p, "proc_interface:          %d\n",
@@ -1078,7 +1078,7 @@ static char *read_version(char *p, uint32_t cap)
 	return p;
 }
 
-static char *read_interface(char *p, uint32_t cap)
+static char *read_interface(char *p, u32 cap)
 {
 	p += sprintf(p, "%s\n", (interface->type == ACER_AMW0 ) ? "AMW0": "WMID");
 	return p;
@@ -1163,7 +1163,7 @@ static struct backlight_device *acer_backlight_device;
 
 static int read_brightness(struct backlight_device *bd)
 {
-	uint8_t value;
+	u8 value;
 	get_u8(&value, ACER_CAP_BRIGHTNESS);
 	return value;
 }
@@ -1342,7 +1342,7 @@ static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
 	 * restore them on resume
 	 */
 	bool value;
-	uint8_t u8value;
+	u8 u8value;
 
 	#define save_bool_device(device, cap) \
 	if (has_cap(cap)) {\
@@ -1388,7 +1388,7 @@ static int acer_acpi_resume(struct acpi_device *device)
 		struct WMID_Data *data = interface->data;
 
 		if (has_cap(ACER_CAP_BRIGHTNESS))
-			set_brightness((uint8_t)data->brightness);
+			set_brightness((u8)data->brightness);
 		restore_bool_device(threeg, ACER_CAP_THREEG);
 		restore_bool_device(wireless, ACER_CAP_WIRELESS);
 		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
