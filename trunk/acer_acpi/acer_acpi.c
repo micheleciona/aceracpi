@@ -509,12 +509,12 @@ WMI_execute(char *methodPath, u32 methodId, const struct acpi_buffer *in, struct
 	params[2].buffer.length = in->length;
 	params[2].buffer.pointer = in->pointer;
 
-	DEBUG(2, "Doing %s( 1, %u, [%llu-byte buffer] )\n", methodPath, methodId, (uint64_t)in->length);
+	DEBUG(2, "Doing %s( 1, %u, [%llu-byte buffer] )\n", methodPath, methodId, (u64)in->length);
 
 	status = acpi_evaluate_object(NULL, methodPath, &input, out);
 
 	DEBUG(2, "  Execution status: %d\n", status);
-	DEBUG(2, "  Result: %llu bytes\n", (uint64_t)(out ? out->length : 0) );
+	DEBUG(2, "  Result: %llu bytes\n", (u64)(out ? out->length : 0) );
 
 	return status;
 }
