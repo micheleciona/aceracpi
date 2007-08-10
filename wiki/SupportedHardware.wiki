@@ -111,8 +111,10 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 1700 series [c,d,n]
   * 2010 series [c,dw,n]
   * 3000 series [c,d,n]
+  * 3030 series [u,dw,n]
   * 3500 series [c,dw,n]
   * 5000 series [c,d,n]
+  * 5030 series [c,d,n]
   * 5510 series [c,dw,n]
 
 ====Extensa====
