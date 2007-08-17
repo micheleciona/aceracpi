@@ -1,4 +1,5 @@
 #summary The following is a list of laptops known to be supported or unsupported by acer_acpi.
+#labels Featured
 
 = Supported Hardware =
 ==Bluetooth==
