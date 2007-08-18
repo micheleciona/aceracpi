@@ -315,6 +315,7 @@ struct quirk_entry {
 	int touchpad;
 	int temperature_override;
 	int mmkeys;
+	int bluetooth;
 };
 
 static struct quirk_entry *quirks;
@@ -345,6 +346,11 @@ static void set_quirks(void)
 		set_keyboard_quirk();
 		printk(MY_INFO "Setting keyboard quirk to enable multimedia keys\n");
 	}
+
+	if (quirks->bluetooth) {
+		interface->capability |= ACER_CAP_BRIGHTNESS;
+		DEBUG(1, "Using EC direct-access quirk for for bluetooth\n");
+	}
 }
 
 static int dmi_matched(struct dmi_system_id *dmi)
@@ -360,7 +366,7 @@ static struct quirk_entry quirk_acer_aspire_5020 = {
 	.wireless = 1,
 	.mailled = 2,
 	.brightness = 1,
-	.temperature_override = 1,
+	.bluetooth = 1,
 };
 
 static struct quirk_entry quirk_acer_aspire_5680 = {
@@ -571,8 +577,10 @@ static void AMW0_init(struct Interface *iface) {
 	 * Set the cached "current" values to impossible ones so that
 	 * acer_commandline_init will definitely set them.
 	 */
-	data->bluetooth = -1;
-	printk(MY_INFO "No EC data for reading bluetooth - bluetooth value when read will be a 'best guess'\n");
+	if (!quirks->bluetooth) {
+		data->bluetooth = -1;
+		printk(MY_INFO "No EC data for reading bluetooth - bluetooth value when read will be a 'best guess'\n");
+	}
 
 	if (!quirks->wireless) {
 		help = 1;
@@ -620,7 +628,13 @@ static acpi_status AMW0_get_bool(bool *value, u32 cap, struct Interface *iface)
 			*value = data->wireless;
 		break;
 	case ACER_CAP_BLUETOOTH:
-		*value = data->bluetooth;
+		if (quirks->bluetooth == 1) {
+			ec_read(0x0A, &result);
+			*value = (result >> 4) & 0x01;
+			return 0;
+		}
+		else
+			*value = data->bluetooth;
 		break;
 	default:
 		return AE_BAD_ADDRESS;
