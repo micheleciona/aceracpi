@@ -43,12 +43,11 @@ On the Aspire 5020, the status of these is all stored in one EC register - 0x0A.
 
 So, for instance, on the Aspire 5020 and 5040, depending on what we toggle, these values are in EC register 0x0A:
 
-  * Wireless Off, Mail LED off: 0
-  * Wireless On, Mail LED off: 4 (bit 4 toggled)
-  * Wireless Off, Mail LED on: 128 (bit 8 toggled)
-  * Wireless On, Mail LED on: 132 (bits 4 & 8 toggled)
-
-(Unfortunately, I do not have an Aspire 5020 with bluetooth, so don't know what values bluetooth should report - this information would be appreciated!)
+  * Bluetooth Off, Wireless Off, Mail LED off: 0
+  * Bluetooth Off, Wireless On, Mail LED off: 4 (bit 4 toggled)
+  * Bluetooth Off, Wireless Off, Mail LED on: 128 (bit 8 toggled)
+  * Bluetooth Off, Wireless On, Mail LED on: 132 (bits 4 & 8 toggled)
+  * Bluetooth On, Wireless Off, Mail LED off: 16 (bit 5 toggled)
 
 The easiest way to test this is to turn on/ off wireless, bluetooth and the mail LED one at a time, and compare the registers before and after - try looking for just _one_ register that changes consistently when you do this.
 
