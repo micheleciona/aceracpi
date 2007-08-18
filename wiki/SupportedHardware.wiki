@@ -147,3 +147,6 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 4500 series [c,dw,n]
   * 4600 series [c,dw,n]
   * 8100 series [c,d,n]
+
+===Compal===
+  * CL56 [c,d,n]
