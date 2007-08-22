@@ -555,7 +555,7 @@ static acpi_status WMAB_execute(struct WMAB_args * regbuf, struct acpi_buffer *r
 }
 
 static void AMW0_init(struct Interface *iface) {
-	bool help;
+	bool help = 0;
 	struct AMW0_Data *data;
 
 	/* Allocate our private data structure */
@@ -578,6 +578,7 @@ static void AMW0_init(struct Interface *iface) {
 	 * acer_commandline_init will definitely set them.
 	 */
 	if (!quirks->bluetooth) {
+		help = 1;
 		data->bluetooth = -1;
 		printk(MY_INFO "No EC data for reading bluetooth - bluetooth value when read will be a 'best guess'\n");
 	}
