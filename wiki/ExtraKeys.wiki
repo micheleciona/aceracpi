@@ -104,7 +104,9 @@ the brightness keys do not emit any scancodes).
 
 = X =
 
-The next step is to map the kernel key codes to X key codes for X (so you can use these keys with your favourite window manager/ desktop environment). For all the extra keys that _don't_ produce an error in dmesg, please run 'xev' in a terminal, whilst running X (e.g. in Konsole). Press the key, and report back to me (Carlos - cathectic(@)gmail.com) the key and its keycode.
+The next step is to map the kernel key codes to X key codes for X (so you can use these keys with your favourite window manager/ desktop environment). I have already submitted an "acer_laptop" layout upstream (it will be in the next post 1.0 release of xkeyboard-config) - however, it's still useful to check that this applies to all Acer laptops.
+
+For all the extra keys that _don't_ produce an error in dmesg, please run 'xev' in a terminal, whilst running X (e.g. in Konsole). Press the key, and report back to me (Carlos - cathectic(@)gmail.com) the key and its keycode.
 
 e.g. If you pressed the letter g you would get two events (a press and a release):
 
