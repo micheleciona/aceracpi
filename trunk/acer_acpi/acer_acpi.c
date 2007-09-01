@@ -580,7 +580,7 @@ static void AMW0_init(struct Interface *iface) {
 		mailled = ACER_DEFAULT_MAILLED;
 	if (wireless == -1 && !quirks->wireless)
 		wireless = ACER_DEFAULT_WIRELESS;
-	if (bluetooth == -1)
+	if (bluetooth == -1 && !quirks->bluetooth)
 		bluetooth = ACER_DEFAULT_BLUETOOTH;
 
 	/*
@@ -1518,9 +1518,6 @@ static int __init acer_acpi_init(void)
 
 	/*
 	 * Register the driver
-	 *
-	 * TODO: Can we use the bus detection code to check for the interface
-	 *       or all or part of the method ID path?
 	 */
 	status = acpi_bus_register_driver(&acer);
 	DEBUG(1, "ACPI driver registered\n");
