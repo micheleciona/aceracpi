@@ -1,14 +1,18 @@
-2007-XX-XX	Version 0.8
+2007-09-01	Version 0.8
 
-* Register backlight with backlight driver
+* Register backlight with backlight subsystem
+
+* Register mail LED with LED subsystem
 
 * Restored 3G support - please note that on WMID laptops, if you try to write
   to a device that you don't have, you _will_ get an ACPI error in dmesg (on
   AMW0 this just fails silently).
 
-* Added new sysfs interface to /sys/devices/platform/acer_acpi
+* Added new sysfs platform driver to /sys/devices/platform/acer_acpi
 
-* Added EC support for Aspire 5040
+* Added EC support for Aspire 5040, 5650 and 9300
+
+* Code clean up - switched C99 types to kernel types, removed typedefs
 
 2007-08-02	Version 0.7
 
