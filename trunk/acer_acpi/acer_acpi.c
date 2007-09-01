@@ -91,7 +91,8 @@ MODULE_LICENSE("GPL");
  * on WMID based Acer's)
  */
 struct acer_quirks {
-	const char *vendor, *model;
+	const char *vendor;
+	const char *model;
 	u16 quirks;
 };
 
@@ -165,9 +166,9 @@ struct acer_quirks {
  * the EC, so we must store this ourselves.
  *
  * Plus, we can't tell which features are enabled or disabled on a specific
- * model, just ranges - e.g. The 5020 series can _support_ bluetooth; but the
- * 5021 has no bluetooth, whilst the 5024 does.  However, the BIOS identifies
- * both laptops as 5020 - we can't tell them apart!
+ * model - e.g. The 5020 series can _support_ bluetooth; but the 5021 has no
+ * bluetooth, whilst the 5024 does.  However, the BIOS identifies both laptops 
+ * as 5020, and you can add bluetooth later.
  *
  * Basically the code works like this:
  *   - On init, any values specified on the commandline are set.
@@ -776,7 +777,7 @@ static void WMID_init(struct Interface *iface)
 }
 
 static acpi_status
-WMI_execute_uint32(u32 methodId, u32 in, u32 *out)
+WMI_execute_u32(u32 methodId, u32 in, u32 *out)
 {
 	struct acpi_buffer input = { (acpi_size)sizeof(u32), (void*)(&in) };
 	struct acpi_buffer result = { ACPI_ALLOCATE_BUFFER, NULL };
@@ -850,7 +851,7 @@ static acpi_status WMID_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 	default:
 		return AE_BAD_ADDRESS;
 	}
-	status = WMI_execute_uint32(methodId, 0, &result);
+	status = WMI_execute_u32(methodId, 0, &result);
 
 	if (ACPI_SUCCESS(status))
 		*value = (u8)result;
@@ -887,7 +888,7 @@ static acpi_status WMID_set_u8(u8 value, u32 cap, struct Interface *iface) {
 	default:
 		return AE_BAD_ADDRESS;
 	}
-	return WMI_execute_uint32(methodId, (u32)value, NULL);
+	return WMI_execute_u32(methodId, (u32)value, NULL);
 }
 
 

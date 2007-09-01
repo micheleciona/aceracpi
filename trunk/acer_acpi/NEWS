@@ -1,8 +1,9 @@
 2007-XX-XX Version 0.8
 	Register backlight with backlight driver
 	Restored 3G support
-	Added new sysfs interface to /sys/devices/platform/acer_acpi
-	Added EC support for Aspire 5040
+	Added new sysfs platform driver to /sys/devices/platform/acer_acpi
+	Added EC support for Aspire 5040, 5650 and 9300
+        Code clean up - switched C99 types to kernel types, removed typedefs
 
 2007-08-02 Version 0.7
 	Dropped 'enabled: X' support
