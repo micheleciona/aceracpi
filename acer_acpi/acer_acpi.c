@@ -49,7 +49,8 @@
 #include <linux/types.h>
 #include <linux/proc_fs.h>
 #include <linux/delay.h>
-#include <linux/uaccess.h>
+/* We should use <linux/uaccess.h>, but it doesn't exist pre 2.6.18 */
+#include <asm/uaccess.h>
 #include <linux/preempt.h>
 #include <linux/io.h>
 #include <linux/dmi.h>
@@ -402,6 +403,15 @@ static struct dmi_system_id acer_quirks[] = {
 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5040"),
 		},
 		.driver_data = &quirk_acer_aspire_5020,
+	},
+	{
+		.callback = dmi_matched,
+		.ident = "Acer Aspire 5650",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5650"),
+		},
+		.driver_data = &quirk_acer_travelmate_2490,
 	},
 	{
 		.callback = dmi_matched,
@@ -1441,10 +1451,16 @@ static int acer_acpi_remove(struct acpi_device *device, int type)
 	return 0;
 }
 
+static const struct acpi_device_id acer_acpi_device_ids[] = {
+	{"PNP0C14", 0},
+	{"pnp0c14", 0},
+	{"", 0},
+};
+
 static struct acpi_driver acer = {
 	.name = "acer_acpi",
 	.class = "acer",
-	.ids = "pnp0c14",
+	.ids = &acer_acpi_device_ids,
 	.ops = {
 		.add = acer_acpi_add,
 		.remove = acer_acpi_remove,
@@ -1472,8 +1488,6 @@ static int __init acer_acpi_init(void)
 	 */
 	if (is_valid_acpi_path(AMW0_METHOD)) {
 		DEBUG(0, "Detected Acer AMW0 interface\n");
-		/* .ids is case sensitive - and AMW0 uses a strange mixed case */
-		acer.ids = "pnp0c14";
 		interface = &AMW0_interface;
 	} else if (is_valid_acpi_path(WMID_METHOD)) {
 		DEBUG(0, "Detected Acer WMID interface\n");
