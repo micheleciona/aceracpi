@@ -49,8 +49,14 @@
 #include <linux/types.h>
 #include <linux/proc_fs.h>
 #include <linux/delay.h>
-/* We should use <linux/uaccess.h>, but it doesn't exist pre 2.6.18 */
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,17)
 #include <asm/uaccess.h>
+#else
+#include <linux/uaccess.h>
+#endif
+
 #include <linux/preempt.h>
 #include <linux/io.h>
 #include <linux/dmi.h>
@@ -1212,6 +1218,38 @@ static int read_brightness(struct backlight_device *bd)
 	return value;
 }
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,20)
+static int update_bl_status(struct backlight_device *bd)
+{
+	set_brightness(bd.props.brightness);
+	return 0;
+}
+
+static struct backlight_properties acer_backlight_properties = {
+	.get_brightness = read_brightness,
+	.update_status = update_bl_status,
+};
+
+static int __init acer_backlight_init(struct device *dev)
+{
+	struct backlight_device *bd;
+
+	DEBUG(1, "Loading backlight driver\n");
+	bd = backlight_device_register("acer_acpi", dev, NULL, &acer_backlight_properties);
+	if (IS_ERR(bd)) {
+		printk(MY_ERR "Could not register Acer backlight device\n");
+		acer_backlight_device = NULL;
+		return PTR_ERR(bd);
+	}
+
+	acer_backlight_device = bd;
+
+	bd.props.max_brightness = ACER_MAX_BRIGHTNESS;
+	bd.props->get_brightness = read_brightness(NULL);
+	backlight_update_status(bd);
+	return 0;
+}
+#else
 static int update_bl_status(struct backlight_device *bd)
 {
 	set_brightness(bd->props.brightness);
@@ -1242,6 +1280,7 @@ static int __init acer_backlight_init(struct device *dev)
 	backlight_update_status(bd);
 	return 0;
 }
+#endif
 
 static void __exit acer_backlight_exit(void)
 {
