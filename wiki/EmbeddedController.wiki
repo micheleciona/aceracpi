@@ -57,7 +57,7 @@ Coming soon:
 
 Mail LED
 
-(I don't have this hardware, so can't offer much guidance. acerhk can be used to toggle the Mail LED. On the TravelMate 2490, the status can be read from EC register 0x9F).
+(I don't have this hardware, so can't offer much guidance. On the TravelMate 2490, the status can be read from EC register 0x9F - you can try this on your laptop by using "force_series=2490").
 
 = What I Need From You =
 
