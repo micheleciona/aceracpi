@@ -1221,7 +1221,7 @@ static int read_brightness(struct backlight_device *bd)
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,20)
 static int update_bl_status(struct backlight_device *bd)
 {
-	set_brightness(bd.props.brightness);
+	set_brightness(bd->props->brightness);
 	return 0;
 }
 
@@ -1244,8 +1244,8 @@ static int __init acer_backlight_init(struct device *dev)
 
 	acer_backlight_device = bd;
 
-	bd.props.max_brightness = ACER_MAX_BRIGHTNESS;
-	bd.props->get_brightness = read_brightness(NULL);
+	bd->props->max_brightness = ACER_MAX_BRIGHTNESS;
+	bd->props->get_brightness = read_brightness(NULL);
 	backlight_update_status(bd);
 	return 0;
 }
