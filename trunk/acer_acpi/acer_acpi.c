@@ -1510,7 +1510,7 @@ static int acer_acpi_remove(struct acpi_device *device, int type)
 static struct acpi_driver acer = {
 	.name = "acer_acpi",
 	.class = "acer",
-	.ids = "pnp0c14",
+	.ids = "PNP0C14",
 	.ops = {
 		.add = acer_acpi_add,
 		.remove = acer_acpi_remove,
