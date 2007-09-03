@@ -1112,8 +1112,8 @@ static unsigned long write_u8(const char *buffer, unsigned long count, u32 cap)
 
 	if (sscanf(buffer, "%i", &value) == 1) {
 		acpi_status status = (*set_method)(value);
-		if (ACPI_FAILURE(status))
-			return -EINVAL;
+		/*if (ACPI_FAILURE(status))
+			return -EINVAL;*/
 	} else {
 		return -EINVAL;
 	}
