@@ -93,6 +93,10 @@ Legend:
 ====Amilo====
   * A1650 [c,d,1]
 
+===Medion===
+====MD====
+  * 98300 [c,dw,1]
+
 == Unsupported ==
 
 This list is _very_ incomplete. The models listed here are the ones known to absolutely _not_ work with this driver - if you have one of these: it is not, cannot and will not be supported by acer_acpi. (Some of these might be useable with acerhk, or the wireless/ bluetooth switches may be hardware driven instead and not require any software).
