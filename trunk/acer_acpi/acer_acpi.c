@@ -39,7 +39,7 @@
  *
  */
 
-#define ACER_ACPI_VERSION	"0.8"
+#define ACER_ACPI_VERSION	"0.8.2"
 #define PROC_INTERFACE_VERSION	1
 #define PROC_ACER		"acer"
 
