@@ -1245,8 +1245,6 @@ static int __init acer_backlight_init(struct device *dev)
 	acer_backlight_device = bd;
 
 	bd->props->max_brightness = ACER_MAX_BRIGHTNESS;
-	bd->props->get_brightness = read_brightness(NULL);
-	/*update_bl_status(bd);*/
 	return 0;
 }
 #else
