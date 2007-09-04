@@ -70,7 +70,6 @@ Legend:
   * 5650 series [c,d,2,k]
   * 5670 series [c,d,2]
   * 5680 series [c,d,2,k]
-  * 5720 series [c,dw,1]
   * 5920 series [c,d,2]
   * 9300 series [c,d,1]
   * 9420 series [c,d,1]
@@ -88,6 +87,7 @@ Legend:
   * 4220 series [c,d,2]
   * 4400 series [c,d,1]
   * 5620 series [c,d,2]
+  * 5720 series [c,d,1]
 
 ===Fujitsu Siemens===
 ====Amilo====
