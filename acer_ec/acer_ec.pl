@@ -4,7 +4,7 @@
 #Copyright (C) 2007  Petr Tomasek     tomasek (#) etf,cuni,cz
 #Copyright (C) 2007  Carlos Corbacho  cathectic (at) gmail.com
 #
-#Version 0.3 (2007-07-29)
+#Version 0.4 (2007-09-04)
 #
 #This program is free software; you can redistribute it and/or
 #modify it under the terms of the GNU General Public License
@@ -174,6 +174,10 @@ if (!$ARGV[0]){
 	print "\'acer_ec setfanthresh <temp>\' \t\t\t\tset temperature threshhold to <temp>, DANGEROUS!\n";
 	print "\'acer_ec getfanthresh\' \t\t\t\tget temperature threshhold\n";
 	print "\'acer_ec <temp-number> <temperature>\' \tfor setting a temperature\n";
+	print "\'acer_ec ?= <reg>\' \t\tQuery register's value\n";
+	print "\'acer_ec := <reg> <val>\' \tSet register's value\n";
+	print "\'acer_ec +f <reg> <val>\' \tOr register's value with val (to set flags)\n";
+	print "\'acer_ec -f <reg> <val>\' \tAnd register's value with ~val (to clear flags)\n";
 	print "where <temp-number> is from 0-7, and <temperture> is from 0-255\n";
 } elsif ($ARGV[0] eq "regs") {
 	print_regs();
@@ -208,6 +212,41 @@ if (!$ARGV[0]){
 		print "touchpad disabled\n";
 	} else {
 		print "touchpad enabled\n"; }
+	close_ioports();
+} elsif ($ARGV[0] eq "?=") {
+	initialize_ioports();
+	my $r = hex($ARGV[1]);
+	printf("REG[0x%02x] == 0x%02x\n", $r, read_ec($r));
+	close_ioports();
+} elsif ($ARGV[0] eq ":=") {
+	initialize_ioports();
+	my $r = hex($ARGV[1]);
+	my $f = hex($ARGV[2]);
+	my $val = read_ec($r);
+	printf("REG[0x%02x] == 0x%02x\n", $r, $val);
+	printf("REG[0x%02x] := 0x%02x\n", $r, $f);
+        write_ec( $r, $f);
+	printf("REG[0x%02x] == 0x%02x\n", $r, read_ec($r));
+	close_ioports();
+} elsif ($ARGV[0] eq "+f") {
+	initialize_ioports();
+	my $r = hex($ARGV[1]);
+	my $f = hex($ARGV[2]);
+	my $val = read_ec($r);
+	printf("REG[0x%02x] == 0x%02x\n", $r, $val);
+	printf("REG[0x%02x] := 0x%02x\n", $r, $val | $f);
+        write_ec( $r, $val | $f);
+	printf("REG[0x%02x] == 0x%02x\n", $r, read_ec($r));
+	close_ioports();
+} elsif ($ARGV[0] eq "-f") {
+	initialize_ioports();
+	my $r = hex($ARGV[1]);
+	my $f = hex($ARGV[2]);
+	my $val = read_ec($r);
+	printf("REG[0x%02x] == 0x%02x\n", $r, $val);
+	printf("REG[0x%02x] := 0x%02x\n", $r, $val & ~$f);
+        write_ec( $r, $val & ~$f);
+	printf("REG[0x%02x] == 0x%02x\n", $r, read_ec($r));
 	close_ioports();
 } elsif ($ARGV[0] eq "ledon") {
 	# TM2490 only - needs testing
