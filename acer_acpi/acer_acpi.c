@@ -81,11 +81,6 @@ MODULE_LICENSE("GPL");
 }
 
 /*
- * Brightness values range from 0x0 to 0xf, inclusive.
- */
-#define ACER_MAX_BRIGHTNESS 0xF
-
-/*
  * The maximum temperature one can set for fan control override.
  * Doesn't propably make much sense if over 80 degrees celsius though...
  */
@@ -189,7 +184,8 @@ struct acer_quirks {
 #define ACER_DEFAULT_BLUETOOTH 0
 #define ACER_DEFAULT_MAILLED   0
 #define ACER_DEFAULT_THREEG    0
-#define ACER_DEFAULT_BRIGHTNESS ACER_MAX_BRIGHTNESS
+
+static int max_brightness = 0xF;
 
 static int wireless = -1;
 static int bluetooth = -1;
@@ -324,6 +320,7 @@ struct quirk_entry {
 	int temperature_override;
 	int mmkeys;
 	int bluetooth;
+	int max_brightness;
 };
 
 static struct quirk_entry *quirks;
@@ -359,6 +356,11 @@ static void set_quirks(void)
 		interface->capability |= ACER_CAP_BRIGHTNESS;
 		DEBUG(1, "Using EC direct-access quirk for for bluetooth\n");
 	}
+
+	if (quirks->max_brightness) {
+		max_brightness = quirks->max_brightness;
+		DEBUG(1, "Changing maximum brightness level\n");
+	}
 }
 
 static int dmi_matched(struct dmi_system_id *dmi)
@@ -390,6 +392,13 @@ static struct quirk_entry quirk_acer_travelmate_2490 = {
 	.mailled = 1,
 	.temperature_override = 1,
 	.touchpad = 1,
+};
+
+static struct quirk_entry quirk_acer_travelmate_5720 = {
+	.max_brightness = 0x9,
+	.touchpad = 2,
+	.wireless = 2,
+	.bluetooth = 2,
 };
 
 static struct dmi_system_id acer_quirks[] = {
@@ -465,6 +474,15 @@ static struct dmi_system_id acer_quirks[] = {
 		},
 		.driver_data = &quirk_acer_travelmate_2490,
 	},
+	{
+		.callback = dmi_matched,
+		.ident = "Acer TravelMate 5720",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 5720"),
+		},
+		.driver_data = &quirk_acer_travelmate_5720,
+	},
 	{}
 };
 
@@ -480,6 +498,9 @@ static void find_quirks(void)
 	} else if (force_series == 2490) {
 		DEBUG(0, "Forcing Acer TravelMate 2490\n");
 		quirks = &quirk_acer_travelmate_2490;
+	} else if (force_series == 5720) {
+		DEBUG(0, "Forcing Acer TravelMate 5720\n");
+		quirks = &quirk_acer_travelmate_5720;
 	}
 
 	if (quirks == NULL) {
@@ -655,22 +676,32 @@ static acpi_status AMW0_get_bool(bool *value, u32 cap, struct Interface *iface)
 			*value = data->mailled;
 		break;
 	case ACER_CAP_WIRELESS:
-		if (quirks->wireless == 1) {
+		switch (quirks->wireless) {
+		case 1:
 			ec_read(0x0A, &result);
 			*value = (result >> 2) & 0x01;
 			return 0;
-		}
-		else
+		case 2:
+			ec_read(0x71, &result);
+			*value = result & 0x01;
+			return 0;
+		default:
 			*value = data->wireless;
+		}
 		break;
 	case ACER_CAP_BLUETOOTH:
-		if (quirks->bluetooth == 1) {
+		switch (quirks->bluetooth) {
+		case 1:
 			ec_read(0x0A, &result);
 			*value = (result >> 4) & 0x01;
 			return 0;
-		}
-		else
+		case 2:
+			ec_read(0x71, &result);
+			*value = result & 0x02;
+			return 0;
+		default:
 			*value = data->bluetooth;
+		}
 		break;
 	default:
 		return AE_BAD_ADDRESS;
@@ -862,10 +893,16 @@ static acpi_status WMID_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 			return 0;
 		}
 	case ACER_CAP_TOUCHPAD_READ:
-		if (quirks->touchpad == 1) {
+		switch (quirks->touchpad) {
+		case 1:
 			ec_read(0x9e, value);
 			*value = 1 - ((*value >> 3) & 0x01);
 			return 0;
+		case 2:
+			ec_read(0x71, value);
+			*value = 1 - ((*value >> 3) & 0x01);
+		default:
+			break;
 		}
 	case ACER_CAP_TEMPERATURE_OVERRIDE:
 		if (quirks->temperature_override == 1) {
@@ -1029,7 +1066,7 @@ static acpi_status set_u8(u8 value, u8 min, u8 max, u32 cap) {
 /* Each _u8 needs a small wrapper that sets the boundary values */
 static acpi_status set_brightness(u8 value)
 {
-	return set_u8(value, 0, ACER_MAX_BRIGHTNESS, ACER_CAP_BRIGHTNESS);
+	return set_u8(value, 0, max_brightness, ACER_CAP_BRIGHTNESS);
 }
 
 static acpi_status set_temperature_override(u8 value)
@@ -1244,7 +1281,7 @@ static int __init acer_backlight_init(struct device *dev)
 
 	acer_backlight_device = bd;
 
-	bd->props->max_brightness = ACER_MAX_BRIGHTNESS;
+	bd->props->max_brightness = max_brightness;
 	return 0;
 }
 #else
@@ -1273,7 +1310,7 @@ static int __init acer_backlight_init(struct device *dev)
 
 	acer_backlight_device = bd;
 
-	bd->props.max_brightness = ACER_MAX_BRIGHTNESS;
+	bd->props.max_brightness = max_brightness;
 	bd->props.brightness = read_brightness(NULL);
 	backlight_update_status(bd);
 	return 0;
