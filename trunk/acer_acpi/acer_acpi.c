@@ -353,8 +353,13 @@ static void set_quirks(void)
 	}
 
 	if (quirks->bluetooth) {
-		interface->capability |= ACER_CAP_BRIGHTNESS;
-		DEBUG(1, "Using EC direct-access quirk for for bluetooth\n");
+		interface->capability |= ACER_CAP_BLUETOOTH;
+		DEBUG(1, "Using EC direct-access quirk for bluetooth\n");
+	}
+
+	if (quirks->wireless) {
+		interface->capability |= ACER_CAP_WIRELESS;
+		DEBUG(1, "Using EC direct-access quirk for wireless\n");
 	}
 
 	if (quirks->max_brightness) {
@@ -399,6 +404,7 @@ static struct quirk_entry quirk_acer_travelmate_5720 = {
 	.touchpad = 2,
 	.wireless = 2,
 	.bluetooth = 2,
+	.brightness = 1,
 };
 
 static struct dmi_system_id acer_quirks[] = {
@@ -697,12 +703,21 @@ static acpi_status AMW0_get_bool(bool *value, u32 cap, struct Interface *iface)
 			return 0;
 		case 2:
 			ec_read(0x71, &result);
-			*value = result & 0x02;
+			*value = (result >> 1) & 0x01;
 			return 0;
 		default:
 			*value = data->bluetooth;
 		}
 		break;
+	case ACER_CAP_TOUCHPAD_READ:
+		switch (quirks->touchpad) {
+		case 2:
+			ec_read(0x74, &result);
+			*value = (result >> 3) & 0x01;
+			return 0;
+		default:
+			break;
+		}
 	default:
 		return AE_BAD_ADDRESS;
 	}
@@ -768,8 +783,8 @@ static acpi_status AMW0_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 			break;
 		default:
 			return AE_BAD_ADDRESS;
-		break;
 		}
+		break;
 	default:
 		return AE_BAD_ADDRESS;
 	}
@@ -898,9 +913,6 @@ static acpi_status WMID_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 			ec_read(0x9e, value);
 			*value = 1 - ((*value >> 3) & 0x01);
 			return 0;
-		case 2:
-			ec_read(0x71, value);
-			*value = 1 - ((*value >> 3) & 0x01);
 		default:
 			break;
 		}
