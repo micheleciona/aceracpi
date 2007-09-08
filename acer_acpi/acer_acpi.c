@@ -444,6 +444,15 @@ static struct dmi_system_id acer_quirks[] = {
 		},
 		.driver_data = &quirk_acer_aspire_5020,
 	},
+	{
+		.callback = dmi_matched,
+		.ident = "Acer Aspire 5560",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5560"),
+		},
+		.driver_data = &quirk_acer_aspire_5020,
+	},
         {
                 .callback = dmi_matched,
                 .ident = "Acer Aspire 5650",
