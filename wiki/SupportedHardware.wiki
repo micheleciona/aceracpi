@@ -123,6 +123,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 3500 series [c,dw,n]
   * 5000 series [c,d,n]
   * 5030 series [c,d,n]
+  * 5500 series [c,d,n]
   * 5510 series [c,dw,n]
 
 ====Extensa====
