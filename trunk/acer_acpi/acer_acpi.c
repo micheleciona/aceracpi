@@ -40,8 +40,16 @@
  */
 
 #define ACER_ACPI_VERSION	"0.8.2"
+
+/*
+ * Comment the following line out to remove /proc support
+ */
+#define CONFIG_PROC
+
+#ifdef CONFIG_PROC
 #define PROC_INTERFACE_VERSION	1
 #define PROC_ACER		"acer"
+#endif
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -213,6 +221,7 @@ MODULE_PARM_DESC(fan_temperature_override, "Set initial state of the 'FAN temper
 MODULE_PARM_DESC(debug, "Debugging verbosity level (0=least 2=most)");
 MODULE_PARM_DESC(force_series, "Force a different laptop series for extra features (5020 or 2490)");
 
+#ifdef CONFIG_PROC
 struct ProcItem {
 	const char *name;
 	char *(*read_func) (char *, u32);
@@ -221,6 +230,7 @@ struct ProcItem {
 };
 
 static struct proc_dir_entry *acer_proc_dir;
+#endif
 
 static int is_valid_acpi_path(const char *methodName)
 {
@@ -990,6 +1000,7 @@ static struct Interface WMID_interface = {
 	.data = NULL,
 };
 
+#ifdef CONFIG_PROC
 /*
  * High-level Procfs file handlers 
  */
@@ -1037,6 +1048,7 @@ dispatch_write(struct file *file, const char __user * buffer,
 	kfree(tmp_buffer);
 	return result;
 }
+#endif
 
 /*
  * Generic Device (interface-independent)
@@ -1112,6 +1124,7 @@ static void __init acer_commandline_init(void)
 	set_brightness((u8)brightness);
 }
 
+#ifdef CONFIG_PROC
 /*
  * Procfs interface (deprecated)
  */
@@ -1239,6 +1252,7 @@ static acpi_status __exit remove_proc_entries(void)
 		remove_proc_entry(item->name, acer_proc_dir);
 	return AE_OK;
 }
+#endif
 
 /*
  * LED device (Mail LED only, no other LEDs known yet)
@@ -1616,6 +1630,7 @@ static int __init acer_acpi_init(void)
 	if (interface->init)
 		interface->init(interface);
 
+#ifdef CONFIG_PROC
 	/* Create the proc entries */
 	acer_proc_dir = proc_mkdir(PROC_ACER, acpi_root_dir);
 	if (!acer_proc_dir) {
@@ -1629,6 +1644,7 @@ static int __init acer_acpi_init(void)
 		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
 		goto error_proc_add;
 	}
+#endif
 
 	/*
 	 * Register the driver
@@ -1646,6 +1662,7 @@ static int __init acer_acpi_init(void)
 	return 0;
 
 error_acpi_bus_register:
+#ifdef CONFIG_PROC
 	remove_proc_entries();
 error_proc_add:
 	if (acer_proc_dir)
@@ -1653,6 +1670,7 @@ error_proc_add:
 error_proc_mkdir:
 	if (interface->free)
 		interface->free(interface);
+#endif
 error_no_interface:
 	return -ENODEV;
 }
@@ -1661,10 +1679,12 @@ static void __exit acer_acpi_exit(void)
 {
 	acpi_bus_unregister_driver(&acer);
 
+#ifdef CONFIG_PROC
 	remove_proc_entries();
 
 	if (acer_proc_dir)
 		remove_proc_entry(PROC_ACER, acpi_root_dir);
+#endif
 
 	if (interface->free)
 		interface->free(interface);
