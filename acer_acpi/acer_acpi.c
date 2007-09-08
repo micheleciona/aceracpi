@@ -492,6 +492,15 @@ static struct dmi_system_id acer_quirks[] = {
 	},
 	{
 		.callback = dmi_matched,
+		.ident = "Acer TravelMate 2420",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 2420"),
+		},
+		.driver_data = &quirk_acer_aspire_5020,
+	},
+	{
+		.callback = dmi_matched,
 		.ident = "Acer TravelMate 2490",
 		.matches = {
 			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
