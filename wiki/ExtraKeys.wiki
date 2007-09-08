@@ -1,6 +1,10 @@
 #summary How to get the extra/ multimedia keys supported
 #labels Featured
 
+= Disclaimer =
+
+I am _not_ a HAL developer - I just think it's about time someone came up with a proper solution to the non-functioning keys problem, and this is the best one of the lot.
+
 = Background =
 
 Keys (usually!) generate scan codes. The Linux kernel (in particular, atkbd.c) 
@@ -136,7 +140,3 @@ On my Aspire 5020, I get the following:
   * Fn+Pg Up (Next) = keycode 153
   * Fn+Up (Volume Up) = keycode 176
   * FN+Down (Volume Down) = keycode 174
-
-= Disclaimer =
-
-I am not a HAL developer - I just think it's about time someone came up with a proper solution to they non-functioning keys problem, and this is the best one of the lot (it's cross distribution and cross platform, and should work out of the box, since AFAIK all distributions enable HAL by default now).
