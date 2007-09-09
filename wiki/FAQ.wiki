@@ -25,7 +25,7 @@ Please upgrade to the latest version of acer_acpi
 
 ==6. dmesg tells me "No or unsupported WMI interface, unable to load"==
 
-Your laptop does not have the ACPI BIOS interface we use to control the hardware. There may be an equivalent function with a different name - in order to find it, you'll need to do some disassembly of your ACPI DSDT.
+Your laptop does not have the WMI-ACPI interface we use to control the hardware. There may be an alternative interface we don't know about - in order to find it, you'll need to do some disassembly of your ACPI DSDT.
 
 ==7. When is the next version of aceracpi coming out?==
 
@@ -44,7 +44,7 @@ Short answer: A while longer yet
 
 Long answer:
 
-acer_acpi relies on the WMI ACPI device - what we currently do is register this device for ourselves, and just call the methods inside it that we know about.
+acer_acpi relies on the WMI-ACPI interface device (defined by the laptops ACPI implementation) - what we currently do is register this device for ourselves, and just call the methods inside it that we know about.
 
 The problem with this approach is that WMI ACPI is used on more than just acer_acpi compatible laptops. The correct solution is to create a new driver, wmi.c, that would parse the WMI device, and provide the methods to us in a way that makes them available for all future WMI based drivers (and a method that is somewhat "saner" than the current one - although with an MS based 'specification', this is a somewhat relative term).
 
