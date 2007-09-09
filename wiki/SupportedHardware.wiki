@@ -24,11 +24,11 @@ Unless you have bought the -3G version of a laptop series, you don't have 3G (un
 
 == Introduction ==
 
-To summarise: the driver only supports those laptops that present a WMI-ACPI interface, that can be manipulated via ACPI. So, any laptop that doesn't provide this interface, or any of the older Dritek type laptops are not supported (for the latter, use acerhk).
+To summarise: the driver only supports those laptops that present a WMI-ACPI interface (defined in your laptops ACPI implementation in the BIOS). So, any laptop that doesn't provide this interface is not supported.
 
-acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Siemens laptop uses this interface as well.
+acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Siemens and one Medion laptop use the same WMI-ACPI interface as Acer.
 
-Unfortunately, it is not possible to tell by the hardware alone which laptop series require acer_acpi. The chances are, if you need to install LaunchManager or Mobility Center addon in Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
+Unfortunately, it is not possible to tell by the hardware alone which laptop series require acer_acpi. The chances are, if you need to install LaunchManager or the Mobility Center add-on in Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
 
 (On some of the supported systems, the wireless (and sometimes bluetooth) switches are hardware controlled; acer_acpi can still control these as well though).
 
@@ -47,7 +47,7 @@ Legend:
   * d = DSDT available
   * dw = DSDT wanted (Please submit yours to us)
   * n = No WMI ACPI interface, will not support
-  * r = New WMI ACPI interface, requires reverse engineering (please contact us to help with this if you can)
+  * r = New WMI ACPI interface, requires reverse engineering
   * k = Requires a keyboard quirk to enable multimedia keys
   * 1 = Version 1 (AMW0 interface)
   * 2 = Version 2 (WMID interface)
