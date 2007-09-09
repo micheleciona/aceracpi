@@ -27,18 +27,22 @@ Please upgrade to the latest version of acer_acpi
 
 Your laptop does not have the WMI-ACPI interface we use to control the hardware. There may be an alternative interface we don't know about - in order to find it, you'll need to do some disassembly of your ACPI DSDT.
 
-==7. When is the next version of aceracpi coming out?==
+==7. dmesg tells me "acer_acpi: Unknown symbol led_classdev_unregister"==
+
+You need to enable the LED subsystem in your kernel configuration.
+
+==8. When is the next version of aceracpi coming out?==
 
 When It's Ready(TM).
 
 
 And finally, not a frequently-asked-question ...
 
-==8. Can I maintain a package for $LINUX_DISTRO?==
+==9. Can I maintain a package for $LINUX_DISTRO?==
 
 Feel free! That's what the GPL is for :-) But I'd appreciate an email, so I know in advance where to direct questions ;-)
 
-==9. When will acer_acpi go mainline?==
+==10. When will acer_acpi go mainline?==
 
 Short answer: A while longer yet
 
