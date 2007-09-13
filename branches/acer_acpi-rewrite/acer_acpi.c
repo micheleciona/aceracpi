@@ -39,7 +39,7 @@
  *
  */
 
-#define ACER_ACPI_VERSION	"0.8.2"
+#define ACER_ACPI_VERSION	"0.9.0"
 
 /*
  * Comment the following line out to remove /proc support
@@ -73,6 +73,11 @@
 #include <linux/platform_device.h>
 
 #include <acpi/acpi_drivers.h>
+
+/* Why is this even necessary? */
+#ifndef bool
+#define bool int
+#endif
 
 MODULE_AUTHOR("Mark Smith");
 MODULE_DESCRIPTION("Acer Laptop ACPI Extras Driver");
@@ -221,17 +226,6 @@ MODULE_PARM_DESC(fan_temperature_override, "Set initial state of the 'FAN temper
 MODULE_PARM_DESC(debug, "Debugging verbosity level (0=least 2=most)");
 MODULE_PARM_DESC(force_series, "Force a different laptop series for extra features (5020 or 2490)");
 
-#ifdef CONFIG_PROC
-struct ProcItem {
-	const char *name;
-	char *(*read_func) (char *, u32);
-	unsigned long (*write_func) (const char *, unsigned long, u32);
-	unsigned int capability;
-};
-
-static struct proc_dir_entry *acer_proc_dir;
-#endif
-
 static int is_valid_acpi_path(const char *methodName)
 {
 	acpi_handle handle;
@@ -294,17 +288,6 @@ struct Interface {
 	 * Frees an interface, should free the interface-specific data
 	 */
 	void (*free) (struct Interface*);
-
-	/*
-	 * Gets and sets various data types.
-	 *   First paramater:  Value to set, or pointer to place got value into
-	 *   Second parameter: Specific capability being requested
-	 *   Third paramater: Pointer to this interface
-	 */
-	acpi_status (*get_bool) (bool*, u32, struct Interface*);
-	acpi_status (*set_bool) (bool, u32, struct Interface*);
-	acpi_status (*get_u8) (u8*, u32, struct Interface*);
-	acpi_status (*set_u8) (u8, u32, struct Interface*);
 
 	/*
 	 * Interface-specific private data member.  Must *not* be touched by
@@ -560,25 +543,6 @@ static void interface_free(struct Interface *iface)
 {
 	/* Free our private data structure */
 	kfree(iface->data);
-}
-
-/* These *_via_u8 use the interface's *_u8 methods to emulate other gets/sets */
-static acpi_status get_bool_via_u8(bool *value, u32 cap, struct Interface *iface) {
-	acpi_status status;
-	u8 result;
-
-	status = iface->get_u8(&result, cap, iface);
-
-	if (ACPI_SUCCESS(status))
-		*value = (result != 0);
-
-	return status;
-}
-
-static acpi_status set_bool_via_u8(bool value, u32 cap, struct Interface *iface) {
-	u8 v = value ? 1 : 0;
-
-	return iface->set_u8(v, cap, iface);
 }
 
 /* General wrapper around the ACPI call */
@@ -848,10 +812,6 @@ static struct Interface AMW0_interface = {
 	),
 	.init = AMW0_init,
 	.free = interface_free,
-	.get_bool = AMW0_get_bool,
-	.set_bool = AMW0_set_bool,
-	.get_u8 = AMW0_get_u8,
-	.set_u8 = AMW0_set_u8,
 };
 
 /*
@@ -1002,62 +962,8 @@ static struct Interface WMID_interface = {
 	),
 	.init = WMID_init,
 	.free = interface_free,
-	.get_bool = get_bool_via_u8,
-	.set_bool = set_bool_via_u8,
-	.get_u8 = WMID_get_u8,
-	.set_u8 = WMID_set_u8,
 	.data = NULL,
 };
-
-#ifdef CONFIG_PROC
-/*
- * High-level Procfs file handlers 
- */
-
-static int
-dispatch_read(char *page, char **start, off_t off, int count, int *eof,
-	      struct ProcItem * item)
-{
-	char *p = page;
-	int len;
-
-	if (off == 0)
-		p = item->read_func(p, item->capability);
-	len = (p - page);
-	if (len <= off + count)
-		*eof = 1;
-	*start = page + off;
-	len -= off;
-	if (len > count)
-		len = count;
-	if (len < 0)
-		len = 0;
-	return len;
-}
-
-static int
-dispatch_write(struct file *file, const char __user * buffer,
-	       unsigned long count, struct ProcItem * item)
-{
-	int result;
-	char *tmp_buffer;
-
-	/*
-	 * Arg buffer points to userspace memory, which can't be accessed
-	 * directly.  Since we're making a copy, zero-terminate the
-	 * destination so that sscanf can be used on it safely. 
-	 */
-	tmp_buffer = kmalloc(count + 1, GFP_KERNEL);
-	if (copy_from_user(tmp_buffer, buffer, count)) {
-		result = -EFAULT;
-	} else {
-		tmp_buffer[count] = 0;
-		result = item->write_func(tmp_buffer, count, item->capability);
-	}
-	kfree(tmp_buffer);
-	return result;
-}
-#endif
 
 /*
  * Generic Device (interface-independent)
@@ -1065,44 +971,61 @@ dispatch_write(struct file *file, const char __user * buffer,
 
 static acpi_status get_bool(bool *value, u32 cap) {
 	acpi_status status = AE_BAD_ADDRESS;
-	if (interface->get_bool)
-		status = interface->get_bool(value, cap, interface);
+	
+	switch (interface->type) {
+	case ACER_AMW0:
+		status = AMW0_get_bool(value, cap, interface);
+		break;
+	case ACER_WMID:
+		// FIXME - value is u8, need bool back!
+		status = WMID_get_u8(value, cap, interface);
+		break;
+	}
 	return status;
 }
 
 static acpi_status set_bool(int value, u32 cap) {
 	acpi_status status = AE_BAD_PARAMETER;
-	if ((value == 0 || value == 1) &&
-			(interface->capability & cap)) {
-		if (interface->set_bool) 
-			status = interface->set_bool(value == 1, cap, interface);
+
+	if ((value == 0 || value == 1) && (interface->capability & cap)) {
+		switch (interface->type) {
+		case ACER_AMW0:
+			status = AMW0_set_bool(value == 1, cap, interface);
+			break;
+		case ACER_WMID:
+			status = AMW0_set_u8(value == 1, cap, interface);
+			break;
+		}
 	}
 	return status;
 
 }
 
 static acpi_status get_u8(u8 *value, u32 cap) {
-	acpi_status status = AE_BAD_ADDRESS;
-	if (interface->get_u8)
-		status = interface->get_u8(value, cap, interface);
-	return status;
+	switch (interface->type) {
+	case ACER_AMW0:
+		return AMW0_get_u8(value, cap, interface);
+		break;
+	case ACER_WMID:
+		return WMID_get_u8(value, cap, interface);
+		break;
+	default:
+		return AE_BAD_ADDRESS;
+	}
 }
 
 static acpi_status set_u8(u8 value, u8 min, u8 max, u32 cap) {
-	acpi_status status = AE_BAD_PARAMETER;
-	if ((value >= min && value <= max) &&
-			(interface->capability & cap) ) {
-		if (interface->get_u8) {
-			/* If possible, only set if the value has changed */
-			u8 actual;
-			status = interface->get_u8(&actual, cap, interface);
-			if (ACPI_SUCCESS(status) && actual == value)
-				return status;
+	if ((value >= min && value <= max) && (interface->capability & cap) ) {
+		switch (interface->type) {
+		case ACER_AMW0:
+			return AMW0_set_u8(value, cap, interface);
+		case ACER_WMID:
+			return WMID_set_u8(value, cap, interface);
+		default:
+			return AE_BAD_PARAMETER;
 		}
-		if (interface->set_u8) 
-			status = interface->set_u8(value, cap, interface);
 	}
-	return status;
+	return AE_BAD_PARAMETER;
 }
 
 /* Each _u8 needs a small wrapper that sets the boundary values */
@@ -1132,136 +1055,6 @@ static void __init acer_commandline_init(void)
 	set_temperature_override(fan_temperature_override);
 	set_brightness((u8)brightness);
 }
-
-#ifdef CONFIG_PROC
-/*
- * Procfs interface (deprecated)
- */
-static char *read_bool(char *p, u32 cap)
-{
-	bool result;
-	acpi_status status = get_bool(&result, cap);
-	if (ACPI_SUCCESS(status))
-		p += sprintf(p, "%d\n", result);
-	else
-		p += sprintf(p, "Read error" );
-	return p;
-}
-
-static unsigned long write_bool(const char *buffer, unsigned long count, u32 cap)
-{
-	int value;
-
-	if (sscanf(buffer, "%i", &value) == 1) {
-		acpi_status status = set_bool(value, cap);
-		if (ACPI_FAILURE(status))
-			return -EINVAL;
-	} else {
-		return -EINVAL;
-	}
-	return count;
-}
-
-static char *read_u8(char *p, u32 cap)
-{
-	u8 result;
-	acpi_status status = get_u8(&result, cap);
-	if (ACPI_SUCCESS(status))
-		p += sprintf(p, "%u\n", result);
-	else
-		p += sprintf(p, "Read error" );
-	return p;
-}
-
-static unsigned long write_u8(const char *buffer, unsigned long count, u32 cap)
-{
-	int value;
-	acpi_status (*set_method)(u8);
-
-	/* Choose the appropriate set_u8 wrapper here, based on the capability */
-	switch (cap) {
-	case ACER_CAP_BRIGHTNESS:
-		set_method = set_brightness;
-		break;
-	case ACER_CAP_TEMPERATURE_OVERRIDE:
-		set_method = set_temperature_override;
-		break;
-	default:
-		return -EINVAL;
-	};
-
-	if (sscanf(buffer, "%i", &value) == 1) {
-		acpi_status status = (*set_method)(value);
-		/*if (ACPI_FAILURE(status))
-			return -EINVAL;*/
-	} else {
-		return -EINVAL;
-	}
-	return count;
-}
-
-static char *read_version(char *p, u32 cap)
-{
-	p += sprintf(p, "driver:                  %s\n", ACER_ACPI_VERSION);
-	p += sprintf(p, "proc_interface:          %d\n",
-			PROC_INTERFACE_VERSION);
-	return p;
-}
-
-static char *read_interface(char *p, u32 cap)
-{
-	p += sprintf(p, "%s\n", (interface->type == ACER_AMW0 ) ? "AMW0": "WMID");
-	return p;
-}
-
-struct ProcItem proc_items[] = {
-	{"mailled", read_bool, write_bool, ACER_CAP_MAILLED},
-	{"bluetooth", read_bool, write_bool, ACER_CAP_BLUETOOTH},
-	{"wireless", read_bool, write_bool, ACER_CAP_WIRELESS},
-	{"brightness", read_u8, write_u8, ACER_CAP_BRIGHTNESS},
-	{"threeg", read_bool, write_bool, ACER_CAP_THREEG},
-	{"touchpad", read_bool, NULL, ACER_CAP_TOUCHPAD_READ},
-	{"fan_temperature_override", read_u8, write_u8, ACER_CAP_TEMPERATURE_OVERRIDE},
-	{"version", read_version, NULL, ACER_CAP_ANY},
-	{"interface", read_interface, NULL, ACER_CAP_ANY},
-	{NULL}
-};
-
-static acpi_status __init add_proc_entries(void)
-{
-	struct proc_dir_entry *proc;
-	struct ProcItem *item;
-
-	for (item = proc_items; item->name; ++item) {
-		/* 
-		 * Only add the proc file if the current interface actually
-		 * supports it
-		 */
-		if (interface->capability & item->capability) {
-			proc = create_proc_read_entry(item->name,
-					S_IFREG | S_IRUGO | S_IWUSR,
-					acer_proc_dir,
-					(read_proc_t *) dispatch_read,
-					item);
-			if (proc)
-				proc->owner = THIS_MODULE;
-			if (proc && item->write_func)
-				proc->write_proc = (write_proc_t *) dispatch_write;
-		}
-	}
-
-	return AE_OK;
-}
-
-static acpi_status __exit remove_proc_entries(void)
-{
-	struct ProcItem *item;
-
-	for (item = proc_items; item->name; ++item)
-		remove_proc_entry(item->name, acer_proc_dir);
-	return AE_OK;
-}
-#endif
 
 /*
  * LED device (Mail LED only, no other LEDs known yet)
@@ -1639,22 +1432,6 @@ static int __init acer_acpi_init(void)
 	if (interface->init)
 		interface->init(interface);
 
-#ifdef CONFIG_PROC
-	/* Create the proc entries */
-	acer_proc_dir = proc_mkdir(PROC_ACER, acpi_root_dir);
-	if (!acer_proc_dir) {
-		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
-		goto error_proc_mkdir;
-	}
-
-	acer_proc_dir->owner = THIS_MODULE;
-	status = add_proc_entries();
-	if (status) {
-		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
-		goto error_proc_add;
-	}
-#endif
-
 	/*
 	 * Register the driver
 	 */
@@ -1671,15 +1448,6 @@ static int __init acer_acpi_init(void)
 	return 0;
 
 error_acpi_bus_register:
-#ifdef CONFIG_PROC
-	remove_proc_entries();
-error_proc_add:
-	if (acer_proc_dir)
-		remove_proc_entry(PROC_ACER, acpi_root_dir);
-error_proc_mkdir:
-	if (interface->free)
-		interface->free(interface);
-#endif
 error_no_interface:
 	return -ENODEV;
 }
@@ -1687,13 +1455,6 @@ error_no_interface:
 static void __exit acer_acpi_exit(void)
 {
 	acpi_bus_unregister_driver(&acer);
-
-#ifdef CONFIG_PROC
-	remove_proc_entries();
-
-	if (acer_proc_dir)
-		remove_proc_entry(PROC_ACER, acpi_root_dir);
-#endif
 
 	if (interface->free)
 		interface->free(interface);

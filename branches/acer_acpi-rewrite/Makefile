@@ -2,7 +2,8 @@
 # autodetection does not work
 #KERNELSRC=/usr/src/linux
 #KERNELSRC=/usr/src/kernel-source-2.4.21-acpi-i2c-lmsensors
-KERNELSRC?=/lib/modules/`uname -r`/build
+#KERNELSRC?=/lib/modules/`uname -r`/build
+KERNELSRC=/home/cathectic/src/kernel/linux-2.6.17
 KERNELVERSION=$(shell awk -F\" '/REL/ {print $$2}' $(shell grep -s -l REL $(KERNELSRC)/include/linux/version.h $(KERNELSRC)/include/linux/utsrelease.h))
 
 KERNELMAJOR=$(shell echo $(KERNELVERSION)|head -c3)
