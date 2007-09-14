@@ -73,12 +73,12 @@
 
 #include <acpi/acpi_drivers.h>
 
-/* Why is this even necessary? */
+/* Workaround needed for older kernels */
 #ifndef bool
 #define bool int
 #endif
 
-MODULE_AUTHOR("Mark Smith");
+MODULE_AUTHOR("Mark Smith, Carlos Corbacho");
 MODULE_DESCRIPTION("Acer Laptop ACPI Extras Driver");
 MODULE_LICENSE("GPL");
 
@@ -1031,14 +1031,15 @@ dispatch_write(struct file *file, const char __user * buffer,
 
 static acpi_status get_bool(bool *value, u32 cap) {
 	acpi_status status = AE_BAD_ADDRESS;
+	u8 *tmp = 0;
 	
 	switch (interface->type) {
 	case ACER_AMW0:
 		status = AMW0_get_bool(value, cap, interface);
 		break;
 	case ACER_WMID:
-		// FIXME - value is u8, need bool back!
-		status = WMID_get_u8(value, cap, interface);
+		status = WMID_get_u8(tmp, cap, interface);
+		*value = (*tmp == 1) ? 1 : 0;
 		break;
 	}
 	return status;
@@ -1175,8 +1176,8 @@ static unsigned long write_u8(const char *buffer, unsigned long count, u32 cap)
 
 	if (sscanf(buffer, "%i", &value) == 1) {
 		acpi_status status = (*set_method)(value);
-		/*if (ACPI_FAILURE(status))
-			return -EINVAL;*/
+		if (ACPI_FAILURE(status))
+			return -EINVAL;
 	} else {
 		return -EINVAL;
 	}
@@ -1553,8 +1554,10 @@ static int acer_acpi_add(struct acpi_device *device)
 	struct device *dev = acpi_get_physical_device(device->handle);
 	if (has_cap(ACER_CAP_MAILLED))
 		acer_led_init(dev);
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,18)
 	if (has_cap(ACER_CAP_BRIGHTNESS))
 		acer_backlight_init(dev);
+#endif
 
 	acer_platform_add();
 	return 0;
@@ -1564,8 +1567,10 @@ static int acer_acpi_remove(struct acpi_device *device, int type)
 {
 	if (has_cap(ACER_CAP_MAILLED))
 		acer_led_exit();
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,18)
 	if (has_cap(ACER_CAP_BRIGHTNESS))
 		acer_backlight_exit();
+#endif
 
 	acer_platform_remove();
 	return 0;
