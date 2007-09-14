@@ -226,6 +226,17 @@ MODULE_PARM_DESC(fan_temperature_override, "Set initial state of the 'FAN temper
 MODULE_PARM_DESC(debug, "Debugging verbosity level (0=least 2=most)");
 MODULE_PARM_DESC(force_series, "Force a different laptop series for extra features (5020 or 2490)");
 
+#ifdef CONFIG_PROC
+struct ProcItem {
+	const char *name;
+	char *(*read_func) (char *, u32);
+	unsigned long (*write_func) (const char *, unsigned long, u32);
+	unsigned int capability;
+};
+
+static struct proc_dir_entry *acer_proc_dir;
+#endif
+
 static int is_valid_acpi_path(const char *methodName)
 {
 	acpi_handle handle;
@@ -965,6 +976,56 @@ static struct Interface WMID_interface = {
 	.data = NULL,
 };
 
+#ifdef CONFIG_PROC
+/*
+ * High-level Procfs file handlers 
+ */
+
+static int
+dispatch_read(char *page, char **start, off_t off, int count, int *eof,
+	      struct ProcItem * item)
+{
+	char *p = page;
+	int len;
+
+	if (off == 0)
+		p = item->read_func(p, item->capability);
+	len = (p - page);
+	if (len <= off + count)
+		*eof = 1;
+	*start = page + off;
+	len -= off;
+	if (len > count)
+		len = count;
+	if (len < 0)
+		len = 0;
+	return len;
+}
+
+static int
+dispatch_write(struct file *file, const char __user * buffer,
+	       unsigned long count, struct ProcItem * item)
+{
+	int result;
+	char *tmp_buffer;
+
+	/*
+	 * Arg buffer points to userspace memory, which can't be accessed
+	 * directly.  Since we're making a copy, zero-terminate the
+	 * destination so that sscanf can be used on it safely. 
+	 */
+	tmp_buffer = kmalloc(count + 1, GFP_KERNEL);
+	if (copy_from_user(tmp_buffer, buffer, count)) {
+		result = -EFAULT;
+	} else {
+		tmp_buffer[count] = 0;
+		result = item->write_func(tmp_buffer, count, item->capability);
+	}
+	kfree(tmp_buffer);
+	return result;
+}
+#endif
+
 /*
  * Generic Device (interface-independent)
  */
@@ -1056,6 +1117,136 @@ static void __init acer_commandline_init(void)
 	set_brightness((u8)brightness);
 }
 
+#ifdef CONFIG_PROC
+/*
+ * Procfs interface (deprecated)
+ */
+static char *read_bool(char *p, u32 cap)
+{
+	bool result;
+	acpi_status status = get_bool(&result, cap);
+	if (ACPI_SUCCESS(status))
+		p += sprintf(p, "%d\n", result);
+	else
+		p += sprintf(p, "Read error" );
+	return p;
+}
+
+static unsigned long write_bool(const char *buffer, unsigned long count, u32 cap)
+{
+	int value;
+
+	if (sscanf(buffer, "%i", &value) == 1) {
+		acpi_status status = set_bool(value, cap);
+		if (ACPI_FAILURE(status))
+			return -EINVAL;
+	} else {
+		return -EINVAL;
+	}
+	return count;
+}
+
+static char *read_u8(char *p, u32 cap)
+{
+	u8 result;
+	acpi_status status = get_u8(&result, cap);
+	if (ACPI_SUCCESS(status))
+		p += sprintf(p, "%u\n", result);
+	else
+		p += sprintf(p, "Read error" );
+	return p;
+}
+
+static unsigned long write_u8(const char *buffer, unsigned long count, u32 cap)
+{
+	int value;
+	acpi_status (*set_method)(u8);
+
+	/* Choose the appropriate set_u8 wrapper here, based on the capability */
+	switch (cap) {
+	case ACER_CAP_BRIGHTNESS:
+		set_method = set_brightness;
+		break;
+	case ACER_CAP_TEMPERATURE_OVERRIDE:
+		set_method = set_temperature_override;
+		break;
+	default:
+		return -EINVAL;
+	};
+
+	if (sscanf(buffer, "%i", &value) == 1) {
+		acpi_status status = (*set_method)(value);
+		/*if (ACPI_FAILURE(status))
+			return -EINVAL;*/
+	} else {
+		return -EINVAL;
+	}
+	return count;
+}
+
+static char *read_version(char *p, u32 cap)
+{
+	p += sprintf(p, "driver:                  %s\n", ACER_ACPI_VERSION);
+	p += sprintf(p, "proc_interface:          %d\n",
+			PROC_INTERFACE_VERSION);
+	return p;
+}
+
+static char *read_interface(char *p, u32 cap)
+{
+	p += sprintf(p, "%s\n", (interface->type == ACER_AMW0 ) ? "AMW0": "WMID");
+	return p;
+}
+
+struct ProcItem proc_items[] = {
+	{"mailled", read_bool, write_bool, ACER_CAP_MAILLED},
+	{"bluetooth", read_bool, write_bool, ACER_CAP_BLUETOOTH},
+	{"wireless", read_bool, write_bool, ACER_CAP_WIRELESS},
+	{"brightness", read_u8, write_u8, ACER_CAP_BRIGHTNESS},
+	{"threeg", read_bool, write_bool, ACER_CAP_THREEG},
+	{"touchpad", read_bool, NULL, ACER_CAP_TOUCHPAD_READ},
+	{"fan_temperature_override", read_u8, write_u8, ACER_CAP_TEMPERATURE_OVERRIDE},
+	{"version", read_version, NULL, ACER_CAP_ANY},
+	{"interface", read_interface, NULL, ACER_CAP_ANY},
+	{NULL}
+};
+
+static acpi_status __init add_proc_entries(void)
+{
+	struct proc_dir_entry *proc;
+	struct ProcItem *item;
+
+	for (item = proc_items; item->name; ++item) {
+		/* 
+		 * Only add the proc file if the current interface actually
+		 * supports it
+		 */
+		if (interface->capability & item->capability) {
+			proc = create_proc_read_entry(item->name,
+					S_IFREG | S_IRUGO | S_IWUSR,
+					acer_proc_dir,
+					(read_proc_t *) dispatch_read,
+					item);
+			if (proc)
+				proc->owner = THIS_MODULE;
+			if (proc && item->write_func)
+				proc->write_proc = (write_proc_t *) dispatch_write;
+		}
+	}
+
+	return AE_OK;
+}
+
+static acpi_status __exit remove_proc_entries(void)
+{
+	struct ProcItem *item;
+
+	for (item = proc_items; item->name; ++item)
+		remove_proc_entry(item->name, acer_proc_dir);
+	return AE_OK;
+}
+#endif
+
 /*
  * LED device (Mail LED only, no other LEDs known yet)
  */
@@ -1080,6 +1271,7 @@ static void acer_led_exit(void)
 	led_classdev_unregister(&mail_led);
 }
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,18)
 /*
  * Backlight device
  */
@@ -1158,6 +1350,7 @@ static void __exit acer_backlight_exit(void)
 {
 	backlight_device_unregister(acer_backlight_device);
 }
+#endif
 
 /*
  * Platform device
@@ -1432,6 +1625,22 @@ static int __init acer_acpi_init(void)
 	if (interface->init)
 		interface->init(interface);
 
+#ifdef CONFIG_PROC
+	/* Create the proc entries */
+	acer_proc_dir = proc_mkdir(PROC_ACER, acpi_root_dir);
+	if (!acer_proc_dir) {
+		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
+		goto error_proc_mkdir;
+	}
+
+	acer_proc_dir->owner = THIS_MODULE;
+	status = add_proc_entries();
+	if (status) {
+		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
+		goto error_proc_add;
+	}
+#endif
+
 	/*
 	 * Register the driver
 	 */
@@ -1448,6 +1657,15 @@ static int __init acer_acpi_init(void)
 	return 0;
 
 error_acpi_bus_register:
+#ifdef CONFIG_PROC
+	remove_proc_entries();
+error_proc_add:
+	if (acer_proc_dir)
+		remove_proc_entry(PROC_ACER, acpi_root_dir);
+error_proc_mkdir:
+	if (interface->free)
+		interface->free(interface);
+#endif
 error_no_interface:
 	return -ENODEV;
 }
@@ -1455,6 +1673,13 @@ error_no_interface:
 static void __exit acer_acpi_exit(void)
 {
 	acpi_bus_unregister_driver(&acer);
+
+#ifdef CONFIG_PROC
+	remove_proc_entries();
+
+	if (acer_proc_dir)
+		remove_proc_entry(PROC_ACER, acpi_root_dir);
+#endif
 
 	if (interface->free)
 		interface->free(interface);
