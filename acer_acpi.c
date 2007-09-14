@@ -47,7 +47,6 @@
 #define CONFIG_PROC
 
 #ifdef CONFIG_PROC
-#define PROC_INTERFACE_VERSION	1
 #define PROC_ACER		"acer"
 #endif
 
@@ -1186,9 +1185,7 @@ static unsigned long write_u8(const char *buffer, unsigned long count, u32 cap)
 
 static char *read_version(char *p, u32 cap)
 {
-	p += sprintf(p, "driver:                  %s\n", ACER_ACPI_VERSION);
-	p += sprintf(p, "proc_interface:          %d\n",
-			PROC_INTERFACE_VERSION);
+	p += sprintf(p, "%s\n", ACER_ACPI_VERSION);
 	return p;
 }
 
