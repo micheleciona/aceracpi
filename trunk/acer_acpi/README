@@ -1,19 +1,16 @@
-This is acer_acpi version 0.8.2
+This is acer_acpi version 0.9.0
 
 ### THIS IS VERY MUCH A WORK IN PROGRESS.  NO WARRANTY GIVEN.  IF YOU
 ### BREAK YOUR LAPTOP USING THIS DRIVER, YOU GET TO KEEP THE PIECES AND
 ### I WILL ACCEPT ABSOLUTELY NO RESPONSIBILITY.
 
 acer_acpi is a driver to allow you to control various aspects of your Acer
-laptop hardware using the proc filesystem.  It was originally developed in
-order to activate the wireless LAN card under a 64-bit version of Linux,
-as acerhk[1] (the previous fine solution to the problem) relied on making BIOS
-calls which are not allowed from a 64-bit OS.
+laptop hardware using the proc filesystem.  It was originally developed by Mark
+Smith, in order to activate the wireless LAN card under a 64-bit version of
+Linux, as acerhk[1] (the previous fine solution to the problem) relied on making
+BIOS calls which are not allowed from a 64-bit OS.
 
 Please read the INSTALL file for installation instructions.
-
-PLEASE NOTE: I (Mark Smith) AM NO LONGER ACTIVELY DEVELOPING ACER_ACPI.
-(many would note that I never actively developed it! :-)
 
 acer_acpi is now being maintained by Carlos Corbacho <cathectic@gmail.com>
 
@@ -26,9 +23,10 @@ As root, modprobe acer_acpi
 
 (To enable debugging, add debug=X, where X is between 0 and 2).
 
-acer_acpi creates entries under /proc/acpi/acer and
-/sys/devices/platform/acer_acpi, which enables you to control some of the
-following (varies between models):
+acer_acpi creates entries under /proc/acpi/acer (deprecated),
+/sys/devices/platform/acer_acpi, /sys/class/backlight (2.6.20 and above only)
+and /sys/class/led, which enables you to control some of the following (varies
+between models):
 
 * the wireless LAN card
 * inbuilt Bluetooth adapter
@@ -53,7 +51,7 @@ To disable a feature:
 echo 0 > /proc/acpi/acer/{feature}
 echo 0 > /sys/devices/platform/acer_acpi/{device}
 
-(brightness and mail LED are not visible in sysfs/ platform device - these are
+(brightness and mail LED are not visible in /sys/devices/platform - these are
 properly registered with the relevant kernel subsystem).
 
 To enable a feature on loading the module:
@@ -77,13 +75,11 @@ combination.
 e.g. With the BCM4318 on the 5020 series:
 
 ndiswrapper: Light blinks on when transmitting
-bcm43xx/ 
-bcm43xx_mac80211: Solid light, blinks off when transmitting
+bcm43xx/b43: Solid light, blinks off when transmitting
 
 Also, acer_acpi does not yet have any means of deciding whether to
-enable or disable entries in /proc/acpi/acer - this means that for
-hardware that isn't there, you can still read/ write the corresponding proc
-file.
+enable or disable entries in proc or sysfs - this means that for
+hardware that isn't there, you can still read/ write the corresponding file.
 
 So: Just because it _says_ "bluetooth" in /proc/acpi/acer, doesn't mean 
 you now actually have a Bluetooth device.

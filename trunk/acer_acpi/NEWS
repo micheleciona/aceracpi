@@ -1,3 +1,8 @@
+2007-09-27 Version 0.9.0
+	Fix compiling on older (pre 2.6.20) kernels
+	Add Acer Aspire 5560, TravelMate 2420 and TravelMate 5720 EC quirks
+	Cleanup of interface code
+
 2007-09-03 Version 0.8.2
 	Really fix backlight code on older kernels
 	Fix write errors with /proc/acpi/acer/brightness
