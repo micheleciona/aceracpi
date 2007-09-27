@@ -39,7 +39,7 @@
  *
  */
 
-#define ACER_ACPI_VERSION	"0.8.2"
+#define ACER_ACPI_VERSION	"0.9.0"
 
 /*
  * Comment the following line out to remove /proc support
@@ -47,7 +47,6 @@
 #define CONFIG_PROC
 
 #ifdef CONFIG_PROC
-#define PROC_INTERFACE_VERSION	1
 #define PROC_ACER		"acer"
 #endif
 
@@ -74,7 +73,12 @@
 
 #include <acpi/acpi_drivers.h>
 
-MODULE_AUTHOR("Mark Smith");
+/* Workaround needed for older kernels */
+#ifndef bool
+#define bool int
+#endif
+
+MODULE_AUTHOR("Mark Smith, Carlos Corbacho");
 MODULE_DESCRIPTION("Acer Laptop ACPI Extras Driver");
 MODULE_LICENSE("GPL");
 
@@ -294,17 +298,6 @@ struct Interface {
 	 * Frees an interface, should free the interface-specific data
 	 */
 	void (*free) (struct Interface*);
-
-	/*
-	 * Gets and sets various data types.
-	 *   First paramater:  Value to set, or pointer to place got value into
-	 *   Second parameter: Specific capability being requested
-	 *   Third paramater: Pointer to this interface
-	 */
-	acpi_status (*get_bool) (bool*, u32, struct Interface*);
-	acpi_status (*set_bool) (bool, u32, struct Interface*);
-	acpi_status (*get_u8) (u8*, u32, struct Interface*);
-	acpi_status (*set_u8) (u8, u32, struct Interface*);
 
 	/*
 	 * Interface-specific private data member.  Must *not* be touched by
@@ -560,25 +553,6 @@ static void interface_free(struct Interface *iface)
 {
 	/* Free our private data structure */
 	kfree(iface->data);
-}
-
-/* These *_via_u8 use the interface's *_u8 methods to emulate other gets/sets */
-static acpi_status get_bool_via_u8(bool *value, u32 cap, struct Interface *iface) {
-	acpi_status status;
-	u8 result;
-
-	status = iface->get_u8(&result, cap, iface);
-
-	if (ACPI_SUCCESS(status))
-		*value = (result != 0);
-
-	return status;
-}
-
-static acpi_status set_bool_via_u8(bool value, u32 cap, struct Interface *iface) {
-	u8 v = value ? 1 : 0;
-
-	return iface->set_u8(v, cap, iface);
 }
 
 /* General wrapper around the ACPI call */
@@ -848,10 +822,6 @@ static struct Interface AMW0_interface = {
 	),
 	.init = AMW0_init,
 	.free = interface_free,
-	.get_bool = AMW0_get_bool,
-	.set_bool = AMW0_set_bool,
-	.get_u8 = AMW0_get_u8,
-	.set_u8 = AMW0_set_u8,
 };
 
 /*
@@ -1002,10 +972,6 @@ static struct Interface WMID_interface = {
 	),
 	.init = WMID_init,
 	.free = interface_free,
-	.get_bool = get_bool_via_u8,
-	.set_bool = set_bool_via_u8,
-	.get_u8 = WMID_get_u8,
-	.set_u8 = WMID_set_u8,
 	.data = NULL,
 };
 
@@ -1065,44 +1031,62 @@ dispatch_write(struct file *file, const char __user * buffer,
 
 static acpi_status get_bool(bool *value, u32 cap) {
 	acpi_status status = AE_BAD_ADDRESS;
-	if (interface->get_bool)
-		status = interface->get_bool(value, cap, interface);
+	u8 *tmp = 0;
+	
+	switch (interface->type) {
+	case ACER_AMW0:
+		status = AMW0_get_bool(value, cap, interface);
+		break;
+	case ACER_WMID:
+		status = WMID_get_u8(tmp, cap, interface);
+		*value = (*tmp == 1) ? 1 : 0;
+		break;
+	}
 	return status;
 }
 
 static acpi_status set_bool(int value, u32 cap) {
 	acpi_status status = AE_BAD_PARAMETER;
-	if ((value == 0 || value == 1) &&
-			(interface->capability & cap)) {
-		if (interface->set_bool) 
-			status = interface->set_bool(value == 1, cap, interface);
+
+	if ((value == 0 || value == 1) && (interface->capability & cap)) {
+		switch (interface->type) {
+		case ACER_AMW0:
+			status = AMW0_set_bool(value == 1, cap, interface);
+			break;
+		case ACER_WMID:
+			status = AMW0_set_u8(value == 1, cap, interface);
+			break;
+		}
 	}
 	return status;
 
 }
 
 static acpi_status get_u8(u8 *value, u32 cap) {
-	acpi_status status = AE_BAD_ADDRESS;
-	if (interface->get_u8)
-		status = interface->get_u8(value, cap, interface);
-	return status;
+	switch (interface->type) {
+	case ACER_AMW0:
+		return AMW0_get_u8(value, cap, interface);
+		break;
+	case ACER_WMID:
+		return WMID_get_u8(value, cap, interface);
+		break;
+	default:
+		return AE_BAD_ADDRESS;
+	}
 }
 
 static acpi_status set_u8(u8 value, u8 min, u8 max, u32 cap) {
-	acpi_status status = AE_BAD_PARAMETER;
-	if ((value >= min && value <= max) &&
-			(interface->capability & cap) ) {
-		if (interface->get_u8) {
-			/* If possible, only set if the value has changed */
-			u8 actual;
-			status = interface->get_u8(&actual, cap, interface);
-			if (ACPI_SUCCESS(status) && actual == value)
-				return status;
+	if ((value >= min && value <= max) && (interface->capability & cap) ) {
+		switch (interface->type) {
+		case ACER_AMW0:
+			return AMW0_set_u8(value, cap, interface);
+		case ACER_WMID:
+			return WMID_set_u8(value, cap, interface);
+		default:
+			return AE_BAD_PARAMETER;
 		}
-		if (interface->set_u8) 
-			status = interface->set_u8(value, cap, interface);
 	}
-	return status;
+	return AE_BAD_PARAMETER;
 }
 
 /* Each _u8 needs a small wrapper that sets the boundary values */
@@ -1192,8 +1176,8 @@ static unsigned long write_u8(const char *buffer, unsigned long count, u32 cap)
 
 	if (sscanf(buffer, "%i", &value) == 1) {
 		acpi_status status = (*set_method)(value);
-		/*if (ACPI_FAILURE(status))
-			return -EINVAL;*/
+		if (ACPI_FAILURE(status))
+			return -EINVAL;
 	} else {
 		return -EINVAL;
 	}
@@ -1202,9 +1186,7 @@ static unsigned long write_u8(const char *buffer, unsigned long count, u32 cap)
 
 static char *read_version(char *p, u32 cap)
 {
-	p += sprintf(p, "driver:                  %s\n", ACER_ACPI_VERSION);
-	p += sprintf(p, "proc_interface:          %d\n",
-			PROC_INTERFACE_VERSION);
+	p += sprintf(p, "%s\n", ACER_ACPI_VERSION);
 	return p;
 }
 
@@ -1287,6 +1269,7 @@ static void acer_led_exit(void)
 	led_classdev_unregister(&mail_led);
 }
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,18)
 /*
  * Backlight device
  */
@@ -1365,6 +1348,7 @@ static void __exit acer_backlight_exit(void)
 {
 	backlight_device_unregister(acer_backlight_device);
 }
+#endif
 
 /*
  * Platform device
@@ -1570,8 +1554,10 @@ static int acer_acpi_add(struct acpi_device *device)
 	struct device *dev = acpi_get_physical_device(device->handle);
 	if (has_cap(ACER_CAP_MAILLED))
 		acer_led_init(dev);
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,18)
 	if (has_cap(ACER_CAP_BRIGHTNESS))
 		acer_backlight_init(dev);
+#endif
 
 	acer_platform_add();
 	return 0;
@@ -1581,8 +1567,10 @@ static int acer_acpi_remove(struct acpi_device *device, int type)
 {
 	if (has_cap(ACER_CAP_MAILLED))
 		acer_led_exit();
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,18)
 	if (has_cap(ACER_CAP_BRIGHTNESS))
 		acer_backlight_exit();
+#endif
 
 	acer_platform_remove();
 	return 0;
