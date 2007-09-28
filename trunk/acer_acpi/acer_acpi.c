@@ -402,6 +402,16 @@ static struct quirk_entry quirk_acer_travelmate_2490 = {
 	.touchpad = 1,
 };
 
+/*
+ * This is the Aspire 5020 but with a different wireless quirk
+ */
+static struct quirk_entry quirk_acer_travelmate_5620 = {
+	.wireless = 2,
+	.mailled = 2,
+	.brightness = 1,
+	.bluetooth = 1,
+};
+
 static struct quirk_entry quirk_acer_travelmate_5720 = {
 	.max_brightness = 0x9,
 	.touchpad = 2,
@@ -454,7 +464,7 @@ static struct dmi_system_id acer_quirks[] = {
 			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5560"),
 		},
-		.driver_data = &quirk_acer_aspire_5020,
+		.driver_data = &quirk_acer_travelmate_5620,
 	},
         {
                 .callback = dmi_matched,
@@ -500,6 +510,15 @@ static struct dmi_system_id acer_quirks[] = {
 			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 2490"),
 		},
 		.driver_data = &quirk_acer_travelmate_2490,
+	},
+	{
+		.callback = dmi_matched,
+		.ident = "Acer TravelMate 5620",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 5620"),
+		},
+		.driver_data = &quirk_acer_travelmate_5620,
 	},
 	{
 		.callback = dmi_matched,
