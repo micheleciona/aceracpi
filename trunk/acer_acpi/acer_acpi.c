@@ -39,7 +39,7 @@
  *
  */
 
-#define ACER_ACPI_VERSION	"0.9.1"
+#define ACER_ACPI_VERSION	"0.10.0"
 
 /*
  * Comment the following line out to remove /proc support
@@ -72,6 +72,8 @@
 #include <linux/platform_device.h>
 
 #include <acpi/acpi_drivers.h>
+
+#include "wmi.h"
 
 /* Workaround needed for older kernels */
 #ifndef bool
@@ -574,40 +576,6 @@ static void interface_free(struct Interface *iface)
 	kfree(iface->data);
 }
 
-/* General wrapper around the ACPI call */
-static acpi_status
-WMI_execute(char *methodPath, u32 methodId, const struct acpi_buffer *in, struct acpi_buffer *out) {
-	struct acpi_object_list input;
-	union acpi_object params[3];
-	acpi_status status = AE_OK;
-
-	/* WMI calling convention:
-	 *  methodPath( instance, methodId, input_buffer )
-	 *    - instance is always 1, since there's only this module
-	 *    - methodId is the method number within the current method group.
-	 *    - Input buffer is ignored for read-only commands
-	 *    - May return a buffer of results (optional)
-	 */
-	input.count = 3;
-	input.pointer = params;
-	params[0].type = ACPI_TYPE_INTEGER;
-	params[0].integer.value = 0x01;
-	params[1].type = ACPI_TYPE_INTEGER;
-	params[1].integer.value = methodId;
-	params[2].type = ACPI_TYPE_BUFFER;
-	params[2].buffer.length = in->length;
-	params[2].buffer.pointer = in->pointer;
-
-	DEBUG(2, "Doing %s( 1, %u, [%llu-byte buffer] )\n", methodPath, methodId, (u64)in->length);
-
-	status = acpi_evaluate_object(NULL, methodPath, &input, out);
-
-	DEBUG(2, "  Execution status: %d\n", status);
-	DEBUG(2, "  Result: %llu bytes\n", (u64)(out ? out->length : 0) );
-
-	return status;
-}
-
 /*
  * Old interface (now known as the AMW0 interface)
  */
@@ -631,7 +599,7 @@ static acpi_status WMAB_execute(struct WMAB_args * regbuf, struct acpi_buffer *r
 	input.length = sizeof(struct WMAB_args);
 	input.pointer = (u8*)regbuf;
 
-	status = WMI_execute( AMW0_METHOD, 1, &input, result);
+	status = wmi_evaluate_block("D9F41781-F633-4400-9355-601770BEC5", 1, &input, result);
 	DEBUG(2, "  Args: 0x%08x 0x%08x 0x%08x 0x%08x\n", regbuf->eax, regbuf->ebx, regbuf->ecx, regbuf->edx );
 
 	return status;
@@ -870,7 +838,7 @@ WMI_execute_u32(u32 methodId, u32 in, u32 *out)
 	acpi_status status;
 
 	DEBUG(2, "  WMI_execute_u32:\n");
-	status = WMI_execute(WMID_METHOD, methodId, &input, &result);
+	status = wmi_evaluate_block("AF4F258-B401-42fd-BE91-3D4AC2D7C0D3", methodId, &input, &result);
 	DEBUG(2, "  In: 0x%08x\n", in);
 
 	if (ACPI_FAILURE(status))
