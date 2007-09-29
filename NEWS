@@ -1,5 +1,7 @@
-2007-XX-XX Version 0.X.X
-	Add support for Acer TravelMate 5620
+2007-09-29 Version 0.9.1
+	Add EC support for Acer TravelMate 5620
+	Fix WMID
+	Fix more read/ write errors
 
 2007-09-27 Version 0.9.0
 	Fix compiling on older (pre 2.6.20) kernels
