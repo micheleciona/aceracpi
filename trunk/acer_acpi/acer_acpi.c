@@ -39,7 +39,7 @@
  *
  */
 
-#define ACER_ACPI_VERSION	"0.9.0"
+#define ACER_ACPI_VERSION	"0.9.1"
 
 /*
  * Comment the following line out to remove /proc support
@@ -688,6 +688,7 @@ static acpi_status AMW0_get_bool(bool *value, u32 cap, struct Interface *iface)
 	struct AMW0_Data *data = iface->data;
 	u8 result;
 
+	DEBUG(2, "  AMW0_get_bool: cap=%d\n", cap);
 	/*
 	 * On some models, we can read these values from the EC. On others,
 	 * we use a stored value
@@ -797,11 +798,9 @@ static acpi_status AMW0_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 	case ACER_CAP_BRIGHTNESS:
 		switch (quirks->brightness) {
 		case 1:
-			ec_read(0x83, value);
-			break;
+			return ec_read(0x83, value);
 		case 2:
-			ec_read(0x85, value);
-			break;
+			return ec_read(0x85, value);
 		default:
 			return AE_BAD_ADDRESS;
 		}
@@ -817,11 +816,9 @@ static acpi_status AMW0_set_u8(u8 value, u32 cap, struct Interface *iface) {
 	case ACER_CAP_BRIGHTNESS:
 		switch (quirks->brightness) {
 		case 1:
-			ec_write(0x83, value);
-			break;
+			return ec_write(0x83, value);
 		case 2:
-			ec_write(0x85, value);
-			break;
+			return ec_write(0x85, value);
 		default:
 			return AE_BAD_ADDRESS;
 		break;
@@ -872,6 +869,7 @@ WMI_execute_u32(u32 methodId, u32 in, u32 *out)
 	u32 tmp;
 	acpi_status status;
 
+	DEBUG(2, "  WMI_execute_u32:\n");
 	status = WMI_execute(WMID_METHOD, methodId, &input, &result);
 	DEBUG(2, "  In: 0x%08x\n", in);
 
@@ -897,6 +895,7 @@ WMI_execute_u32(u32 methodId, u32 in, u32 *out)
 	if (result.length > 0 && result.pointer)
 		kfree(result.pointer);
 
+	DEBUG(2, "  Returning from WMI_execute_u32:\n");
 	return status;
 }
 
@@ -905,6 +904,7 @@ static acpi_status WMID_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 	u32 result;
 	u32 methodId = 0;
 
+	DEBUG(2, "  WMID_get_u8: cap=%d\n", cap);
 	switch (cap) {
 	case ACER_CAP_WIRELESS:
 		methodId = ACER_WMID_GET_WIRELESS_METHODID;
@@ -942,10 +942,12 @@ static acpi_status WMID_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 		return AE_BAD_ADDRESS;
 	}
 	status = WMI_execute_u32(methodId, 0, &result);
+	DEBUG(2, "   WMI_execute_u32 status=%d:\n", status);
 
 	if (ACPI_SUCCESS(status))
 		*value = (u8)result;
 
+	DEBUG(2, "  Returning from WMID_get_u8:\n");
 	return status;
 }
 
@@ -983,6 +985,7 @@ static acpi_status WMID_set_u8(u8 value, u32 cap, struct Interface *iface) {
 
 
 static struct Interface WMID_interface = {
+	.type = ACER_WMID,
 	.capability = (
 		ACER_CAP_WIRELESS
 		| ACER_CAP_BRIGHTNESS
@@ -1006,6 +1009,7 @@ dispatch_read(char *page, char **start, off_t off, int count, int *eof,
 	char *p = page;
 	int len;
 
+	DEBUG(2, "  dispatch_read: \n");
 	if (off == 0)
 		p = item->read_func(p, item->capability);
 	len = (p - page);
@@ -1050,30 +1054,35 @@ dispatch_write(struct file *file, const char __user * buffer,
 
 static acpi_status get_bool(bool *value, u32 cap) {
 	acpi_status status = AE_BAD_ADDRESS;
-	u8 *tmp = 0;
+	u8 tmp = 0;
 	
+	DEBUG(2, "  get_bool: cap=%d, interface type=%d\n",
+			cap, interface->type);
 	switch (interface->type) {
 	case ACER_AMW0:
 		status = AMW0_get_bool(value, cap, interface);
 		break;
 	case ACER_WMID:
-		status = WMID_get_u8(tmp, cap, interface);
-		*value = (*tmp == 1) ? 1 : 0;
+		status = WMID_get_u8(&tmp, cap, interface);
+		*value = (tmp == 1) ? 1 : 0;
 		break;
 	}
+	DEBUG(2, "  Returning from get_bool:\n");
 	return status;
 }
 
 static acpi_status set_bool(int value, u32 cap) {
 	acpi_status status = AE_BAD_PARAMETER;
 
+	DEBUG(2, "  set_bool: cap=%d, interface type=%d, value=%d\n",
+			cap, interface->type, value);
 	if ((value == 0 || value == 1) && (interface->capability & cap)) {
 		switch (interface->type) {
 		case ACER_AMW0:
 			status = AMW0_set_bool(value == 1, cap, interface);
 			break;
 		case ACER_WMID:
-			status = AMW0_set_u8(value == 1, cap, interface);
+			status = WMID_set_u8(value == 1, cap, interface);
 			break;
 		}
 	}
@@ -1082,6 +1091,7 @@ static acpi_status set_bool(int value, u32 cap) {
 }
 
 static acpi_status get_u8(u8 *value, u32 cap) {
+	DEBUG(2, "  get_u8: cap=%d\n", cap);
 	switch (interface->type) {
 	case ACER_AMW0:
 		return AMW0_get_u8(value, cap, interface);
@@ -1095,6 +1105,10 @@ static acpi_status get_u8(u8 *value, u32 cap) {
 }
 
 static acpi_status set_u8(u8 value, u8 min, u8 max, u32 cap) {
+
+	DEBUG(2, "  set_u8: cap=%d, interface type=%d, value=%d\n",
+			cap, interface->type, value);
+
 	if ((value >= min && value <= max) && (interface->capability & cap) ) {
 		switch (interface->type) {
 		case ACER_AMW0:
@@ -1143,7 +1157,10 @@ static void __init acer_commandline_init(void)
 static char *read_bool(char *p, u32 cap)
 {
 	bool result;
-	acpi_status status = get_bool(&result, cap);
+	acpi_status status;
+
+	DEBUG(2, "  read_bool: cap=%d\n", cap); 
+	status = get_bool(&result, cap);
 	if (ACPI_SUCCESS(status))
 		p += sprintf(p, "%d\n", result);
 	else
@@ -1154,6 +1171,9 @@ static char *read_bool(char *p, u32 cap)
 static unsigned long write_bool(const char *buffer, unsigned long count, u32 cap)
 {
 	int value;
+
+	DEBUG(2, "  write_bool: cap=%d, interface type=%d\n buffer=%s\n",
+			cap, interface->type, buffer);
 
 	if (sscanf(buffer, "%i", &value) == 1) {
 		acpi_status status = set_bool(value, cap);
@@ -1168,7 +1188,10 @@ static unsigned long write_bool(const char *buffer, unsigned long count, u32 cap
 static char *read_u8(char *p, u32 cap)
 {
 	u8 result;
-	acpi_status status = get_u8(&result, cap);
+	acpi_status status;
+
+	DEBUG(2, "  read_u8: cap=%d\n", cap);
+	status = get_u8(&result, cap);
 	if (ACPI_SUCCESS(status))
 		p += sprintf(p, "%u\n", result);
 	else
