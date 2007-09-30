@@ -50,7 +50,15 @@ MODULE_LICENSE("GPL");
 struct guid_mapping
 {
 	char guid[16];
-	char object_id[2];
+	union
+	{
+		char object_id[2];
+		struct
+		{
+			unsigned char notification_value;
+			unsigned char reserved;
+		};
+	};
 	u8 instance_count;
 	u8 flags;
 };
