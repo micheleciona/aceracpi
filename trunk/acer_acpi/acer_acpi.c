@@ -147,16 +147,10 @@ struct acer_quirks {
 #define ACER_WMID_SET_THREEG_METHODID 11
 
 /*
- * Acer ACPI method paths 
- *
- * TODO: It may be possbile to autodetect these, since these are all at HID PNP0C14
+ * Acer ACPI method GUIDs
  */
-#define AMW0_METHOD		"\\_SB_.AMW0.WMAB"
-#define AMW0_GETDATA		"\\_SB_.AMW0._WED"
-
-#define WMID_METHOD		"\\_SB.WMID.WMBA"
-#define WMID_GETDATA		"\\_SB.WMID._WED"
-
+#define AMW0_GUID1		"67C3371D-95A3-4C37-BB61-DD47B491DAAB"
+#define WMID_GUID1		"6AF4F258-B401-42fd-BE91-3D4AC2D7C0D3"
 /*
  * Interface capability flags
  */
@@ -237,15 +231,6 @@ struct ProcItem {
 
 static struct proc_dir_entry *acer_proc_dir;
 #endif
-
-static int is_valid_acpi_path(const char *methodName)
-{
-	acpi_handle handle;
-	acpi_status status;
-
-	status = acpi_get_handle(NULL, (char *)methodName, &handle);
-	return ACPI_SUCCESS(status);
-}
 
 /*
  * Wait for the keyboard controller to become ready
@@ -599,7 +584,7 @@ static acpi_status WMAB_execute(struct WMAB_args * regbuf, struct acpi_buffer *r
 	input.length = sizeof(struct WMAB_args);
 	input.pointer = (u8*)regbuf;
 
-	status = wmi_evaluate_block("D9F41781-F633-4400-9355-601770BEC5", 1, &input, result);
+	status = wmi_evaluate_block(AMW0_GUID1, 1, &input, result);
 	DEBUG(2, "  Args: 0x%08x 0x%08x 0x%08x 0x%08x\n", regbuf->eax, regbuf->ebx, regbuf->ecx, regbuf->edx );
 
 	return status;
@@ -838,7 +823,7 @@ WMI_execute_u32(u32 methodId, u32 in, u32 *out)
 	acpi_status status;
 
 	DEBUG(2, "  WMI_execute_u32:\n");
-	status = wmi_evaluate_block("AF4F258-B401-42fd-BE91-3D4AC2D7C0D3", methodId, &input, &result);
+	status = wmi_evaluate_block(WMID_GUID1, methodId, &input, &result);
 	DEBUG(2, "  In: 0x%08x\n", in);
 
 	if (ACPI_FAILURE(status))
@@ -1219,7 +1204,7 @@ struct ProcItem proc_items[] = {
 	{NULL}
 };
 
-static acpi_status __init add_proc_entries(void)
+static int __init add_proc_entries(void)
 {
 	struct proc_dir_entry *proc;
 	struct ProcItem *item;
@@ -1242,16 +1227,16 @@ static acpi_status __init add_proc_entries(void)
 		}
 	}
 
-	return AE_OK;
+	return 0;
 }
 
-static acpi_status __exit remove_proc_entries(void)
+static int __exit remove_proc_entries(void)
 {
 	struct ProcItem *item;
 
 	for (item = proc_items; item->name; ++item)
 		remove_proc_entry(item->name, acer_proc_dir);
-	return AE_OK;
+	return 0;
 }
 #endif
 
@@ -1361,10 +1346,6 @@ static void __exit acer_backlight_exit(void)
 #endif
 
 /*
- * Platform device
- */
-
-/*
  * Read/ write bool sysfs macro
  */
 #define show_set_bool(value, cap) \
@@ -1427,71 +1408,32 @@ static ssize_t show_interface(struct device *dev, struct device_attribute *attr,
 
 static DEVICE_ATTR(interface, S_IWUGO | S_IRUGO | S_IWUSR, show_interface, NULL);
 
-static struct platform_driver acer_platform_driver = {
-	.driver = {
-		.name = "acer_acpi",
-		.owner = THIS_MODULE,
-		}
-};
-
-static struct platform_device *acer_platform_device;
-
-static int remove_sysfs(struct platform_device *device)
-{
-	#define remove_device_file(value, cap) \
-	if (has_cap(cap)) \
-		device_remove_file(&device->dev, &dev_attr_##value);
-
-	remove_device_file(wireless, ACER_CAP_WIRELESS);
-	remove_device_file(bluetooth, ACER_CAP_BLUETOOTH);
-	remove_device_file(threeg, ACER_CAP_THREEG);
-	remove_device_file(interface, ACER_CAP_ANY);
-	remove_device_file(fan_temperature_override, ACER_CAP_TEMPERATURE_OVERRIDE);
-	remove_device_file(touchpad, ACER_CAP_TOUCHPAD_READ);
-	return 0;
-}
-
-static int acer_platform_add(void)
-{
-	int retval = -ENOMEM;
-	platform_driver_register(&acer_platform_driver);
-
-	acer_platform_device = platform_device_alloc("acer_acpi", -1);
-
-	platform_device_add(acer_platform_device);
-
-	#define add_device_file(value, cap) \
-	if (has_cap(cap)) {\
-		retval = device_create_file(&acer_platform_device->dev, &dev_attr_##value);\
-		if (retval)\
-			goto error;\
-	}
-
-	add_device_file(wireless, ACER_CAP_WIRELESS);
-	add_device_file(bluetooth, ACER_CAP_BLUETOOTH);
-	add_device_file(threeg, ACER_CAP_THREEG);
-	add_device_file(interface, ACER_CAP_ANY);
-	add_device_file(fan_temperature_override, ACER_CAP_TEMPERATURE_OVERRIDE);
-	add_device_file(touchpad, ACER_CAP_TOUCHPAD_READ);
-	
-	return 0;
-
-	error:
-		remove_sysfs(acer_platform_device);
-	return retval;
-}
-
-static void acer_platform_remove(void)
-{
-	remove_sysfs(acer_platform_device);
-	platform_device_del(acer_platform_device);
-	platform_driver_unregister(&acer_platform_driver);
-}
-
 /*
- * ACPI driver
+ * Platform device
  */
-static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
+static int __devinit acer_platform_probe(struct platform_device *device)
+{
+	if (has_cap(ACER_CAP_MAILLED))
+		acer_led_init(&device->dev);
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,18)
+	if (has_cap(ACER_CAP_BRIGHTNESS))
+		acer_backlight_init(&device->dev);
+#endif
+	return 0;
+}
+
+static int acer_platform_remove(struct platform_device *device)
+{
+	if (has_cap(ACER_CAP_MAILLED))
+		acer_led_exit();
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,18)
+	if (has_cap(ACER_CAP_BRIGHTNESS))
+		acer_backlight_exit();
+#endif
+	return 0;
+}
+
+static int acer_platform_suspend(struct platform_device *device, pm_message_t state)
 {
 	/* 
 	 * WMID fix for suspend-to-disk - save all current states now so we can
@@ -1523,7 +1465,7 @@ static int acer_acpi_suspend(struct acpi_device *device, pm_message_t state)
 	return 0;
 }
 
-static int acer_acpi_resume(struct acpi_device *device)
+static int acer_platform_resume(struct platform_device *device)
 {
 	#define restore_bool_device(device, cap) \
 	if (has_cap(cap))\
@@ -1559,74 +1501,78 @@ static int acer_acpi_resume(struct acpi_device *device)
 	return 0;
 }
 
-static int acer_acpi_add(struct acpi_device *device)
-{
-	struct device *dev = acpi_get_physical_device(device->handle);
-	if (has_cap(ACER_CAP_MAILLED))
-		acer_led_init(dev);
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,18)
-	if (has_cap(ACER_CAP_BRIGHTNESS))
-		acer_backlight_init(dev);
-#endif
-
-	acer_platform_add();
-	return 0;
-}
-
-static int acer_acpi_remove(struct acpi_device *device, int type)
-{
-	if (has_cap(ACER_CAP_MAILLED))
-		acer_led_exit();
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,18)
-	if (has_cap(ACER_CAP_BRIGHTNESS))
-		acer_backlight_exit();
-#endif
-
-	acer_platform_remove();
-	return 0;
-}
-
-static struct acpi_driver acer = {
-	.name = "acer_acpi",
-	.class = "acer",
-	.ids = "PNP0C14",
-	.ops = {
-		.add = acer_acpi_add,
-		.remove = acer_acpi_remove,
-		.suspend = acer_acpi_suspend,
-		.resume = acer_acpi_resume,
+static struct platform_driver acer_platform_driver = {
+	.driver = {
+		.name = "acer_acpi",
+		.owner = THIS_MODULE,
 	},
+	.probe = acer_platform_probe,
+	.remove = acer_platform_remove,
+	.suspend = acer_platform_suspend,
+	.resume = acer_platform_resume,
 };
+
+static struct platform_device *acer_platform_device;
+
+static int remove_sysfs(struct platform_device *device)
+{
+	#define remove_device_file(value, cap) \
+	if (has_cap(cap)) \
+		device_remove_file(&device->dev, &dev_attr_##value);
+
+	remove_device_file(wireless, ACER_CAP_WIRELESS);
+	remove_device_file(bluetooth, ACER_CAP_BLUETOOTH);
+	remove_device_file(threeg, ACER_CAP_THREEG);
+	remove_device_file(interface, ACER_CAP_ANY);
+	remove_device_file(fan_temperature_override, ACER_CAP_TEMPERATURE_OVERRIDE);
+	remove_device_file(touchpad, ACER_CAP_TOUCHPAD_READ);
+	return 0;
+}
+
+static int create_sysfs(void)
+{
+	int retval = -ENOMEM;
+
+	#define add_device_file(value, cap) \
+	if (has_cap(cap)) {\
+		retval = device_create_file(&acer_platform_device->dev, &dev_attr_##value);\
+		if (retval)\
+			goto error;\
+	}
+
+	add_device_file(wireless, ACER_CAP_WIRELESS);
+	add_device_file(bluetooth, ACER_CAP_BLUETOOTH);
+	add_device_file(threeg, ACER_CAP_THREEG);
+	add_device_file(interface, ACER_CAP_ANY);
+	add_device_file(fan_temperature_override, ACER_CAP_TEMPERATURE_OVERRIDE);
+	add_device_file(touchpad, ACER_CAP_TOUCHPAD_READ);
+	
+	return 0;
+
+	error:
+		remove_sysfs(acer_platform_device);
+	return retval;
+}
 
 static int __init acer_acpi_init(void)
 {
-	acpi_status status = AE_OK;
-
 	printk(MY_INFO "Acer Laptop ACPI Extras version %s\n",
 			ACER_ACPI_VERSION);
-	if (acpi_disabled) {
-		printk(MY_ERR "ACPI Disabled, unable to load.\n");
-		return -ENODEV;
-	}
 
 	/*
 	 * Detect which WMI interface we're using.
-	 *
-	 * TODO: This could be more dynamic, and perhaps done in part by the
-	 *       acpi_bus driver?
 	 */
-	if (is_valid_acpi_path(AMW0_METHOD)) {
+	if (wmi_evaluate_block(AMW0_GUID1, 1, NULL, NULL)) {
 		DEBUG(0, "Detected Acer AMW0 interface\n");
-		/* .ids is case sensitive - and AMW0 uses a strange mixed case */
-		acer.ids = "pnp0c14";
 		interface = &AMW0_interface;
-	} else if (is_valid_acpi_path(WMID_METHOD)) {
+	} else if (wmi_evaluate_block(WMID_GUID1, 1, NULL, NULL)) {
 		DEBUG(0, "Detected Acer WMID interface\n");
 		interface = &WMID_interface;
 	} else {
 		printk(MY_ERR "No or unsupported WMI interface, unable to load.\n");
-		goto error_no_interface;
+		return -ENODEV;
 	}
+	interface = &AMW0_interface;
 
 	/* Find if this laptop requires any quirks */
 	DEBUG(1, "Finding quirks\n");
@@ -1646,8 +1592,7 @@ static int __init acer_acpi_init(void)
 	}
 
 	acer_proc_dir->owner = THIS_MODULE;
-	status = add_proc_entries();
-	if (status) {
+	if (add_proc_entries()) {
 		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
 		goto error_proc_add;
 	}
@@ -1656,12 +1601,16 @@ static int __init acer_acpi_init(void)
 	/*
 	 * Register the driver
 	 */
-	status = acpi_bus_register_driver(&acer);
-	DEBUG(1, "ACPI driver registered\n");
-	if (status) {
-		printk(MY_ERR "Unable to register ACPI driver, aborting.\n");
+	if (platform_driver_register(&acer_platform_driver)) {
+		printk(MY_ERR "Unable to register platform driver, aborting.\n");
 		goto error_acpi_bus_register;
 	}
+	acer_platform_device = platform_device_alloc("acer_acpi", -1);
+	platform_device_add(acer_platform_device);
+
+	create_sysfs();
+
+	DEBUG(1, "Driver registered\n");
 
 	/* Override any initial settings with values from the commandline */
 	acer_commandline_init();
@@ -1684,7 +1633,9 @@ error_no_interface:
 
 static void __exit acer_acpi_exit(void)
 {
-	acpi_bus_unregister_driver(&acer);
+	remove_sysfs(acer_platform_device);
+	platform_device_del(acer_platform_device);
+	platform_driver_unregister(&acer_platform_driver);
 
 #ifdef CONFIG_PROC
 	remove_proc_entries();
