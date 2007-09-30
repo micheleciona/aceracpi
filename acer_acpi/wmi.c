@@ -55,7 +55,13 @@ struct guid_mapping
 	u8 flags;
 };
 
-static struct guid_mapping *guid_list = NULL;
+struct guid_list
+{
+	struct guid_mapping *pointer;
+	int total;
+};
+
+static struct guid_list guids;
 static acpi_handle acpi_wmi_handle;
 static int debug;
 
@@ -111,6 +117,29 @@ static int wmi_parse_hexbyte (const u8 *src)
 }
 
 /**
+ * wmi_swap_bytes - Rearrange GUID bytes to match GUID binary
+ * @src:   Memory block holding binary GUID (16 bytes)
+ * @dest:  Memory block to hold byte swapped binary GUID (16 bytes)
+ *
+ * Byte swap a binary GUID to match it's real GUID value
+ */
+static void wmi_swap_bytes(u8 *src, u8 *dest)
+{
+	int i;
+
+	for (i = 0; i <= 3; i++)
+		memcpy(dest + i, src + (3 - i), 1);
+
+	for (i = 0; i <= 1; i++)
+		memcpy(dest + 4 + i, src + (5 - i), 1);
+
+	for (i = 0; i <= 1; i++)
+		memcpy(dest + 6 + i, src + (7 - i), 1);
+
+	memcpy(dest + 8, src + 8, 8);
+}
+
+/**
  * wmi_parse_guid - Convert GUID from ASCII to binary
  * @src:   36 char string of the form fa50ff2b-f2e8-45de-83fa-65417f2f49ba
  * @dest:  Memory block to hold binary GUID (16 bytes)
@@ -133,8 +162,6 @@ static bool wmi_parse_guid (const u8 *src, u8 *dest)
                 for (i = 0; i < size[j]; i++, src+=2, *dest++ = v)
                         if ((v = wmi_parse_hexbyte (src)) < 0)
                                 return false;
-
-	DEBUG(2, "GUID succesfully parsed\n");
 
         return true;
 }
@@ -184,7 +211,7 @@ static acpi_status wmi_evaluate_object(struct guid_mapping *block, u32 methodId,
 	params[1].type = ACPI_TYPE_INTEGER;
 	params[1].integer.value = methodId;
 
-	if (in != NULL) { /* FIXME */
+	if (in != NULL) {
 		params[2].type = ACPI_TYPE_BUFFER;
 		params[2].buffer.length = in->length;
 		params[2].buffer.pointer = in->pointer;
@@ -210,19 +237,20 @@ static acpi_status wmi_evaluate_object(struct guid_mapping *block, u32 methodId,
  * Externally callable WMI functions
  */
 
-int wmi_evaluate_block(char* guid, u32 methodId, const struct acpi_buffer *in, struct acpi_buffer *out)
+int wmi_evaluate_block(char* guid_string, u32 methodId, const struct acpi_buffer *in, struct acpi_buffer *out)
 {
-	char block_guid[16];
+	char tmp[16], guid_input[16];
 	struct guid_mapping *block;
+	int i;
 
 	DEBUG(2, "Passing GUID to parser\n");
-	wmi_parse_guid(guid, &block_guid[0]);
+	wmi_parse_guid(guid_string, tmp);
+	wmi_swap_bytes(tmp, guid_input);
 
-	block = guid_list;
+	for (i = 0; i < guids.total; i++) {
+		block = guids.pointer + i;
 
-	while (block != NULL) {
-		block++;
-		if (memcmp(block->guid, block_guid, 16)) {
+		if (memcmp(block->guid, guid_input, 16) == 0) {
 			if (block->flags & WMIACPI_REGFLAG_EVENT) {
 				DEBUG(2, "GUID is an event\n");
 				return AE_NOT_IMPLEMENTED;
@@ -230,8 +258,9 @@ int wmi_evaluate_block(char* guid, u32 methodId, const struct acpi_buffer *in, s
 				DEBUG(2, "GUID is not an event - evaluating\n");
 				return wmi_evaluate_object(block, methodId, in, out);
 			}
+		} else {
+			DEBUG(0, "Failed to match GUID\n");
 		}
-		return AE_BAD_ADDRESS;
 	}
 
 	DEBUG(2, "Unable to match GUID\n");
@@ -265,10 +294,10 @@ static int parse_wdg(void)
 
 	DEBUG(2, "Size of _WDG output is %d bytes\n", obj->buffer.length);
 
-	guid_list = (struct guid_mapping*) obj->buffer.pointer;
+	guids.pointer = (struct guid_mapping*) obj->buffer.pointer;
 
 	DEBUG(2, "GUID blocks = %lu \n", obj->buffer.length / sizeof(struct guid_mapping));
-	
+	guids.total = obj->buffer.length / sizeof(struct guid_mapping);
 	return AE_OK;
 }
 
@@ -321,7 +350,7 @@ static int __init acpi_wmi_init(void)
 		return -ENODEV;
 	}
 
-	printk("wmi: Succesfully loaded!\n");
+	DEBUG(0, "Succesfully loaded!\n");
 
 	return 0;
 }
@@ -329,7 +358,7 @@ static int __init acpi_wmi_init(void)
 static void __exit acpi_wmi_exit(void)
 {
 	acpi_bus_unregister_driver(&acpi_wmi_driver);
-	printk("wmi: Unloaded!\n");
+	DEBUG(0, "Unloaded!\n");
 
 	return;
 }
