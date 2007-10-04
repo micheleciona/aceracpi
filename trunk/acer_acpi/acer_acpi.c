@@ -584,7 +584,7 @@ static acpi_status WMAB_execute(struct WMAB_args * regbuf, struct acpi_buffer *r
 	input.length = sizeof(struct WMAB_args);
 	input.pointer = (u8*)regbuf;
 
-	status = wmi_evaluate_block(AMW0_GUID1, 1, &input, result);
+	status = wmi_evaluate_method(AMW0_GUID1, 1, 1, &input, result);
 	DEBUG(2, "  Args: 0x%08x 0x%08x 0x%08x 0x%08x\n", regbuf->eax, regbuf->ebx, regbuf->ecx, regbuf->edx );
 
 	return status;
@@ -823,15 +823,15 @@ WMI_execute_u32(u32 methodId, u32 in, u32 *out)
 	acpi_status status;
 
 	DEBUG(2, "  WMI_execute_u32:\n");
-	status = wmi_evaluate_block(WMID_GUID1, methodId, &input, &result);
+	status = wmi_evaluate_method(WMID_GUID1, 1, methodId, &input, &result);
 	DEBUG(2, "  In: 0x%08x\n", in);
 
 	if (ACPI_FAILURE(status))
 		return status;
 
-	obj = (union acpi_object *)result.pointer;
+	obj = (union acpi_object *) result.pointer;
 	if (obj && obj->type == ACPI_TYPE_BUFFER && obj->buffer.length == sizeof(u32)) {
-		tmp = *((u32*)obj->buffer.pointer);
+		tmp = *((u32 *) obj->buffer.pointer);
 		DEBUG(2, "  Out: 0x%08x\n", tmp);
 	} else {
 		tmp = 0;
@@ -1562,12 +1562,12 @@ static int __init acer_acpi_init(void)
 	/*
 	 * Detect which WMI interface we're using.
 	 */
-	if (wmi_evaluate_block(AMW0_GUID1, 1, NULL, NULL)) {
-		DEBUG(0, "Detected Acer AMW0 interface\n");
-		interface = &AMW0_interface;
-	} else if (wmi_evaluate_block(WMID_GUID1, 1, NULL, NULL)) {
+	if (wmi_has_guid(WMID_GUID1)) {
 		DEBUG(0, "Detected Acer WMID interface\n");
 		interface = &WMID_interface;
+	} else if (wmi_has_guid(AMW0_GUID1)) {
+		DEBUG(0, "Detected Acer AMW0 interface\n");
+		interface = &AMW0_interface;
 	} else {
 		printk(MY_ERR "No or unsupported WMI interface, unable to load.\n");
 		return -ENODEV;
