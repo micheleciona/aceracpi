@@ -22,4 +22,13 @@
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-int wmi_evaluate_block(char* guid, u32 methodId, const struct acpi_buffer *in, struct acpi_buffer *out);
+/* Workaround needed for older kernels */
+#ifndef bool
+#define bool int
+#endif
+
+acpi_status wmi_evaluate_method(const char *guid, u32 instance, u32 method_id, const struct acpi_buffer *in, struct acpi_buffer *out);
+acpi_status wmi_query_block(const char *guid, u32 instance, u32 method_id, struct acpi_buffer *out);
+acpi_status wmi_set_block(const char *guid, u32 instance, u32 method_id, const struct acpi_buffer *in);
+
+bool wmi_has_guid(char *guid);
