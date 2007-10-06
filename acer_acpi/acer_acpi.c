@@ -296,6 +296,14 @@ struct Interface {
 /* The static interface pointer, points to the currently detected interface */
 static struct Interface *interface;
 
+struct acer_data {
+	int mailled;
+	int wireless;
+	int bluetooth;
+	int threeg;
+	int brightness;
+};
+
 /*
  * Embedded Controller quirks
  * Some laptops require us to directly access the EC to either enable or query
@@ -571,12 +579,6 @@ struct WMAB_args {
 	u32 edx;
 };
 
-struct AMW0_Data {
-	int mailled;
-	int wireless;
-	int bluetooth;
-};
-
 static acpi_status WMAB_execute(struct WMAB_args * regbuf, struct acpi_buffer *result)
 {
 	struct acpi_buffer input;
@@ -592,11 +594,11 @@ static acpi_status WMAB_execute(struct WMAB_args * regbuf, struct acpi_buffer *r
 
 static void AMW0_init(struct Interface *iface) {
 	bool help = 0;
-	struct AMW0_Data *data;
+	struct acer_data *data;
 
 	/* Allocate our private data structure */
-	iface->data = kmalloc(sizeof(struct AMW0_Data), GFP_KERNEL);
-	data = (struct AMW0_Data*)iface->data;
+	iface->data = kmalloc(sizeof(struct acer_data), GFP_KERNEL);
+	data = (struct acer_data*)iface->data;
 
 	/* 
 	 * If the commandline doesn't specify these, we need to force them to
@@ -638,7 +640,7 @@ static void AMW0_init(struct Interface *iface) {
 
 static acpi_status AMW0_get_bool(bool *value, u32 cap, struct Interface *iface)
 {
-	struct AMW0_Data *data = iface->data;
+	struct acer_data *data = iface->data;
 	u8 result;
 
 	DEBUG(2, "  AMW0_get_bool: cap=%d\n", cap);
@@ -648,13 +650,14 @@ static acpi_status AMW0_get_bool(bool *value, u32 cap, struct Interface *iface)
          */
 	switch (cap) {
 	case ACER_CAP_MAILLED:
-		if (quirks->mailled == 2) {
+		switch (quirks->mailled) {
+		case 2:
 			ec_read(0x0A, &result);
 			*value = (result >> 7) & 0x01;
 			return 0;
-		}
-		else
+		default:
 			*value = data->mailled;
+		}
 		break;
 	case ACER_CAP_WIRELESS:
 		switch (quirks->wireless) {
@@ -729,7 +732,7 @@ static acpi_status AMW0_set_bool(bool value, u32 cap, struct Interface *iface)
 	 * success
 	 */
 	if (ACPI_SUCCESS(status)) {
-		struct AMW0_Data *data = iface->data;
+		struct acer_data *data = iface->data;
 		switch (cap) {
 		case ACER_CAP_MAILLED:
 			data->mailled = value;
@@ -796,34 +799,27 @@ static struct Interface AMW0_interface = {
 /*
  * New interface (The WMID interface)
  */
-struct WMID_Data {
-	int mailled;
-	int wireless;
-	int bluetooth;
-	int threeg;
-	int brightness;
-};
 
 static void WMID_init(struct Interface *iface)
 {
-	struct WMID_Data *data;
+	struct acer_data *data;
 
 	/* Allocate our private data structure */
-	iface->data = kmalloc(sizeof(struct WMID_Data), GFP_KERNEL);
-	data = (struct WMID_Data*)iface->data;
+	iface->data = kmalloc(sizeof(struct acer_data), GFP_KERNEL);
+	data = (struct acer_data *) iface->data;
 }
 
 static acpi_status
-WMI_execute_u32(u32 methodId, u32 in, u32 *out)
+WMI_execute_u32(u32 method_id, u32 in, u32 *out)
 {
-	struct acpi_buffer input = { (acpi_size)sizeof(u32), (void*)(&in) };
+	struct acpi_buffer input = { (acpi_size) sizeof(u32), (void*)(&in) };
 	struct acpi_buffer result = { ACPI_ALLOCATE_BUFFER, NULL };
 	union acpi_object *obj;
 	u32 tmp;
 	acpi_status status;
 
 	DEBUG(2, "  WMI_execute_u32:\n");
-	status = wmi_evaluate_method(WMID_GUID1, 1, methodId, &input, &result);
+	status = wmi_evaluate_method(WMID_GUID1, 1, method_id, &input, &result);
 	DEBUG(2, "  In: 0x%08x\n", in);
 
 	if (ACPI_FAILURE(status))
@@ -855,21 +851,21 @@ WMI_execute_u32(u32 methodId, u32 in, u32 *out)
 static acpi_status WMID_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 	acpi_status status;
 	u32 result;
-	u32 methodId = 0;
+	u32 method_id = 0;
 
 	DEBUG(2, "  WMID_get_u8: cap=%d\n", cap);
 	switch (cap) {
 	case ACER_CAP_WIRELESS:
-		methodId = ACER_WMID_GET_WIRELESS_METHODID;
+		method_id = ACER_WMID_GET_WIRELESS_METHODID;
 		break;
 	case ACER_CAP_BLUETOOTH:
-		methodId = ACER_WMID_GET_BLUETOOTH_METHODID;
+		method_id = ACER_WMID_GET_BLUETOOTH_METHODID;
 		break;
 	case ACER_CAP_BRIGHTNESS:
-		methodId = ACER_WMID_GET_BRIGHTNESS_METHODID;
+		method_id = ACER_WMID_GET_BRIGHTNESS_METHODID;
 		break;
 	case ACER_CAP_THREEG:
-		methodId = ACER_WMID_GET_THREEG_METHODID;
+		method_id = ACER_WMID_GET_THREEG_METHODID;
 		break;
 	case ACER_CAP_MAILLED:
 		if (quirks->mailled == 1) {
@@ -894,7 +890,7 @@ static acpi_status WMID_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 	default:
 		return AE_BAD_ADDRESS;
 	}
-	status = WMI_execute_u32(methodId, 0, &result);
+	status = WMI_execute_u32(method_id, 0, &result);
 	DEBUG(2, "   WMI_execute_u32 status=%d:\n", status);
 
 	if (ACPI_SUCCESS(status))
@@ -905,20 +901,20 @@ static acpi_status WMID_get_u8(u8 *value, u32 cap, struct Interface *iface) {
 }
 
 static acpi_status WMID_set_u8(u8 value, u32 cap, struct Interface *iface) {
-	u32 methodId = 0;
+	u32 method_id = 0;
 
 	switch (cap) {
 	case ACER_CAP_BRIGHTNESS:
-		methodId = ACER_WMID_SET_BRIGHTNESS_METHODID;
+		method_id = ACER_WMID_SET_BRIGHTNESS_METHODID;
 		break;
 	case ACER_CAP_WIRELESS:
-		methodId = ACER_WMID_SET_WIRELESS_METHODID;
+		method_id = ACER_WMID_SET_WIRELESS_METHODID;
 		break;
 	case ACER_CAP_BLUETOOTH:
-		methodId = ACER_WMID_SET_BLUETOOTH_METHODID;
+		method_id = ACER_WMID_SET_BLUETOOTH_METHODID;
 		break;
 	case ACER_CAP_THREEG:
-		methodId = ACER_WMID_SET_THREEG_METHODID;
+		method_id = ACER_WMID_SET_THREEG_METHODID;
 		break;
 	case ACER_CAP_MAILLED:
 		if (quirks->mailled == 1) {
@@ -933,7 +929,7 @@ static acpi_status WMID_set_u8(u8 value, u32 cap, struct Interface *iface) {
 	default:
 		return AE_BAD_ADDRESS;
 	}
-	return WMI_execute_u32(methodId, (u32)value, NULL);
+	return WMI_execute_u32(method_id, (u32)value, NULL);
 }
 
 
@@ -1441,6 +1437,7 @@ static int acer_platform_suspend(struct platform_device *device, pm_message_t st
 	 */
 	bool value;
 	u8 u8value;
+	struct acer_data *data = interface->data;
 
 	#define save_bool_device(device, cap) \
 	if (has_cap(cap)) {\
@@ -1453,9 +1450,8 @@ static int acer_platform_suspend(struct platform_device *device, pm_message_t st
 		get_u8(&u8value, cap);\
 		data->device = u8value;\
 	}
-	
+
 	if (interface->type == ACER_WMID) {
-		struct WMID_Data *data = interface->data;
 		save_bool_device(wireless, ACER_CAP_WIRELESS);
 		save_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
 		save_bool_device(threeg, ACER_CAP_THREEG);
@@ -1467,30 +1463,19 @@ static int acer_platform_suspend(struct platform_device *device, pm_message_t st
 
 static int acer_platform_resume(struct platform_device *device)
 {
+	struct acer_data *data = interface->data;
+
 	#define restore_bool_device(device, cap) \
 	if (has_cap(cap))\
 		set_bool(data->device, cap);\
 
-	/*
-	 * We must _always_ restore AMW0's values, otherwise the values
-	 * after suspend-to-disk are wrong
-	 */
-	if (interface->type == ACER_AMW0) {
-		struct AMW0_Data *data = interface->data;
-	
-		restore_bool_device(wireless, ACER_CAP_WIRELESS);
-		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
-		restore_bool_device(mailled, ACER_CAP_MAILLED);
-	}
-	else if (interface->type == ACER_WMID) {
-		struct WMID_Data *data = interface->data;
+	restore_bool_device(wireless, ACER_CAP_WIRELESS);
+	restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
+	restore_bool_device(threeg, ACER_CAP_THREEG);
+	restore_bool_device(mailled, ACER_CAP_MAILLED);
 
-		if (has_cap(ACER_CAP_BRIGHTNESS))
-			set_brightness((u8)data->brightness);
-		restore_bool_device(threeg, ACER_CAP_THREEG);
-		restore_bool_device(wireless, ACER_CAP_WIRELESS);
-		restore_bool_device(bluetooth, ACER_CAP_BLUETOOTH);
-	}
+	if (has_cap(ACER_CAP_BRIGHTNESS))
+		set_brightness((u8)data->brightness);
 
 	/* Check if this laptop requires the keyboard quirk */
 	if (quirks->mmkeys) {
