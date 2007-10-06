@@ -84,14 +84,14 @@ MODULE_AUTHOR("Mark Smith, Carlos Corbacho");
 MODULE_DESCRIPTION("Acer Laptop ACPI Extras Driver");
 MODULE_LICENSE("GPL");
 
-#define MY_LOGPREFIX "acer_acpi: "
-#define MY_ERR KERN_ERR MY_LOGPREFIX
-#define MY_NOTICE KERN_NOTICE MY_LOGPREFIX
-#define MY_INFO KERN_INFO MY_LOGPREFIX
+#define ACER_LOGPREFIX "acer_acpi: "
+#define ACER_ERR KERN_ERR ACER_LOGPREFIX
+#define ACER_NOTICE KERN_NOTICE ACER_LOGPREFIX
+#define ACER_INFO KERN_INFO ACER_LOGPREFIX
 
 #define DEBUG(level, message...) { \
 	if (debug >= level) \
-		printk(KERN_DEBUG MY_LOGPREFIX message);\
+		printk(KERN_DEBUG ACER_LOGPREFIX message);\
 }
 
 /*
@@ -151,23 +151,28 @@ struct acer_quirks {
  */
 #define AMW0_GUID1		"67C3371D-95A3-4C37-BB61-DD47B491DAAB"
 #define WMID_GUID1		"6AF4F258-B401-42fd-BE91-3D4AC2D7C0D3"
+
 /*
  * Interface capability flags
  */
-#define ACER_CAP_MAILLED    (1<<0)
-#define ACER_CAP_WIRELESS   (1<<1)
-#define ACER_CAP_BLUETOOTH  (1<<2)
-#define ACER_CAP_BRIGHTNESS (1<<3)
-#define ACER_CAP_THREEG     (1<<4)
-#define ACER_CAP_TOUCHPAD_READ	(1<<5)
-#define ACER_CAP_TEMPERATURE_OVERRIDE	(1<<6)
-#define ACER_CAP_ANY        (0xffffffff)
+enum cap_flags {
+	ACER_CAP_MAILLED,
+	ACER_CAP_WIRELESS,
+	ACER_CAP_BLUETOOTH,
+	ACER_CAP_BRIGHTNESS,
+	ACER_CAP_THREEG,
+	ACER_CAP_TOUCHPAD_READ,
+	ACER_CAP_TEMPERATURE_OVERRIDE,
+	ACER_CAP_ANY,
+};
 
 /*
  * Interface type flags
  */
-#define ACER_AMW0 (1<<0)
-#define ACER_WMID (1<<1)
+enum interface_flags {
+	ACER_AMW0,
+	ACER_WMID,
+};
 
 /*
  * Presumed start states -
@@ -176,7 +181,7 @@ struct acer_quirks {
  *
  * Plus, we can't tell which features are enabled or disabled on a specific
  * model - e.g. The 5020 series can _support_ bluetooth; but the 5021 has no
- * bluetooth, whilst the 5024 does.  However, the BIOS identifies both laptops 
+ * bluetooth, whilst the 5024 does.  However, the BIOS identifies both laptops
  * as 5020, and you can add bluetooth later.
  *
  * Basically the code works like this:
@@ -219,7 +224,7 @@ MODULE_PARM_DESC(brightness, "Set initial LCD backlight brightness");
 MODULE_PARM_DESC(threeg, "Set initial state of 3G hardware");
 MODULE_PARM_DESC(fan_temperature_override, "Set initial state of the 'FAN temperature-override'");
 MODULE_PARM_DESC(debug, "Debugging verbosity level (0=least 2=most)");
-MODULE_PARM_DESC(force_series, "Force a different laptop series for extra features (5020 or 2490)");
+MODULE_PARM_DESC(force_series, "Force a different laptop series for extra features (5020, 5720 or 2490)");
 
 #ifdef CONFIG_PROC
 struct ProcItem {
@@ -347,7 +352,7 @@ static void set_quirks(void)
 
 	if (quirks->mmkeys) {
 		set_keyboard_quirk();
-		printk(MY_INFO "Setting keyboard quirk to enable multimedia keys\n");
+		printk(ACER_INFO "Setting keyboard quirk to enable multimedia keys\n");
 	}
 
 	if (quirks->bluetooth) {
@@ -398,7 +403,7 @@ static struct quirk_entry quirk_acer_travelmate_2490 = {
 };
 
 /*
- * This is the Aspire 5020 but with a different wireless quirk
+ * This is similar to the Aspire 5020, but with a different wireless quirk
  */
 static struct quirk_entry quirk_acer_travelmate_5620 = {
 	.wireless = 2,
@@ -539,6 +544,9 @@ static void find_quirks(void)
 	} else if (force_series == 2490) {
 		DEBUG(0, "Forcing Acer TravelMate 2490\n");
 		quirks = &quirk_acer_travelmate_2490;
+	} else if (force_series == 5620) {
+		DEBUG(0, "Forcing Acer TravelMate 5620\n");
+		quirks = &quirk_acer_travelmate_5620;
 	} else if (force_series == 5720) {
 		DEBUG(0, "Forcing Acer TravelMate 5720\n");
 		quirks = &quirk_acer_travelmate_5720;
@@ -618,23 +626,23 @@ static void AMW0_init(struct Interface *iface) {
 	if (!quirks->bluetooth) {
 		help = 1;
 		data->bluetooth = -1;
-		printk(MY_INFO "No EC data for reading bluetooth - bluetooth value when read will be a 'best guess'\n");
+		printk(ACER_INFO "No EC data for reading bluetooth - bluetooth value when read will be a 'best guess'\n");
 	}
 
 	if (!quirks->wireless) {
 		help = 1;
-		printk(MY_INFO "No EC data for reading wireless - wireless value when read will be a 'best guess'\n");
+		printk(ACER_INFO "No EC data for reading wireless - wireless value when read will be a 'best guess'\n");
 		data->wireless = -1;
 	}
 	if (!quirks->mailled) {
 		help = 1;
-		printk(MY_INFO "No EC data for reading mail LED - mail LED value when read will be a 'best guess'\n");
+		printk(ACER_INFO "No EC data for reading mail LED - mail LED value when read will be a 'best guess'\n");
 		data->mailled = -1;
 	}
 
 	if (help) {
-		printk(MY_INFO "We need more data from your laptop's Embedded Controller (EC) to better support it\n");
-		printk(MY_INFO "Please see http://code.google.com/p/aceracpi/wiki/EmbeddedController on how to help\n");
+		printk(ACER_INFO "We need more data from your laptop's Embedded Controller (EC) to better support it\n");
+		printk(ACER_INFO "Please see http://code.google.com/p/aceracpi/wiki/EmbeddedController on how to help\n");
 	}
 }
 
@@ -1292,7 +1300,7 @@ static int __init acer_backlight_init(struct device *dev)
 	DEBUG(1, "Loading backlight driver\n");
 	bd = backlight_device_register("acer_acpi", dev, NULL, &acer_backlight_properties);
 	if (IS_ERR(bd)) {
-		printk(MY_ERR "Could not register Acer backlight device\n");
+		printk(ACER_ERR "Could not register Acer backlight device\n");
 		acer_backlight_device = NULL;
 		return PTR_ERR(bd);
 	}
@@ -1321,7 +1329,7 @@ static int __init acer_backlight_init(struct device *dev)
 	DEBUG(1, "Loading backlight driver\n");
 	bd = backlight_device_register("acer_acpi", dev, NULL, &acer_backlight_ops);
 	if (IS_ERR(bd)) {
-		printk(MY_ERR "Could not register Acer backlight device\n");
+		printk(ACER_ERR "Could not register Acer backlight device\n");
 		acer_backlight_device = NULL;
 		return PTR_ERR(bd);
 	}
@@ -1480,7 +1488,7 @@ static int acer_platform_resume(struct platform_device *device)
 	/* Check if this laptop requires the keyboard quirk */
 	if (quirks->mmkeys) {
 		set_keyboard_quirk();
-		printk(MY_INFO "Setting keyboard quirk to enable multimedia keys\n");
+		printk(ACER_INFO "Setting keyboard quirk to enable multimedia keys\n");
 	}
 
 	return 0;
@@ -1541,7 +1549,7 @@ static int create_sysfs(void)
 
 static int __init acer_acpi_init(void)
 {
-	printk(MY_INFO "Acer Laptop ACPI Extras version %s\n",
+	printk(ACER_INFO "Acer Laptop ACPI Extras version %s\n",
 			ACER_ACPI_VERSION);
 
 	/*
@@ -1554,7 +1562,7 @@ static int __init acer_acpi_init(void)
 		DEBUG(0, "Detected Acer AMW0 interface\n");
 		interface = &AMW0_interface;
 	} else {
-		printk(MY_ERR "No or unsupported WMI interface, unable to load.\n");
+		printk(ACER_ERR "No or unsupported WMI interface, unable to load.\n");
 		return -ENODEV;
 	}
 	interface = &AMW0_interface;
@@ -1572,13 +1580,13 @@ static int __init acer_acpi_init(void)
 	/* Create the proc entries */
 	acer_proc_dir = proc_mkdir(PROC_ACER, acpi_root_dir);
 	if (!acer_proc_dir) {
-		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
+		printk(ACER_ERR "Unable to create /proc entries, aborting.\n");
 		goto error_proc_mkdir;
 	}
 
 	acer_proc_dir->owner = THIS_MODULE;
 	if (add_proc_entries()) {
-		printk(MY_ERR "Unable to create /proc entries, aborting.\n");
+		printk(ACER_ERR "Unable to create /proc entries, aborting.\n");
 		goto error_proc_add;
 	}
 #endif
@@ -1587,7 +1595,7 @@ static int __init acer_acpi_init(void)
 	 * Register the driver
 	 */
 	if (platform_driver_register(&acer_platform_driver)) {
-		printk(MY_ERR "Unable to register platform driver, aborting.\n");
+		printk(ACER_ERR "Unable to register platform driver, aborting.\n");
 		goto error_acpi_bus_register;
 	}
 	acer_platform_device = platform_device_alloc("acer_acpi", -1);
@@ -1632,7 +1640,7 @@ static void __exit acer_acpi_exit(void)
 	if (interface->free)
 		interface->free(interface);
 
-	printk(MY_INFO "Acer Laptop ACPI Extras unloaded\n");
+	printk(ACER_INFO "Acer Laptop ACPI Extras unloaded\n");
 	return;
 }
 
