@@ -36,7 +36,6 @@
  *                    hardware/ LEDs on and off at module loading (thanks
  *                    again to acerhk for the inspiration)
  *  Jim Ramsay - Figured out and added support for WMID interface
- *
  */
 
 #define ACER_ACPI_VERSION	"0.10.0"
@@ -127,7 +126,6 @@ struct acer_quirks {
 
 /*
  * Bit masks for the old AMW0 interface
- * These could vary between the particular interface
  */
 #define ACER_AMW0_WIRELESS_MASK  0x35
 #define ACER_AMW0_BLUETOOTH_MASK 0x34
@@ -135,7 +133,6 @@ struct acer_quirks {
 
 /*
  * Method IDs for new WMID interface
- * These could be different for other untested machines
  */
 #define ACER_WMID_GET_WIRELESS_METHODID   1
 #define ACER_WMID_GET_BLUETOOTH_METHODID  2
@@ -316,56 +313,56 @@ struct acer_data {
  */
 
 struct quirk_entry {
-	int wireless;
-	int mailled;
-	int brightness;
-	int touchpad;
-	int temperature_override;
-	int mmkeys;
-	int bluetooth;
-	int max_brightness;
+	u8 wireless;
+	u8 mailled;
+	u8 brightness;
+	u8 touchpad;
+	u8 temperature_override;
+	u8 mmkeys;
+	u8 bluetooth;
+	u8 max_brightness;
 };
 
 static struct quirk_entry *quirks;
 
 static void set_quirks(void)
 {
-	if (quirks->mailled) {
+	if (quirks->mailled != 0) {
 		interface->capability |= ACER_CAP_MAILLED;
 		DEBUG(1, "Using EC direct-access quirk for mail LED\n");
 	}
 
-	if (quirks->touchpad) {
+	if (quirks->touchpad != 0) {
 		interface->capability |= ACER_CAP_TOUCHPAD_READ;
 		DEBUG(1, "Using EC direct-access quirk for reading touchpad status\n");
 	}
 
-	if (quirks->temperature_override) {
+	if (quirks->temperature_override != 0) {
 		interface->capability |= ACER_CAP_TEMPERATURE_OVERRIDE;
 		DEBUG(1, "Using EC direct-access quirk for temperature override setting (fan)\n");
 	}
 
-	if (quirks->brightness) {
+	if (quirks->brightness != 0) {
 		interface->capability |= ACER_CAP_BRIGHTNESS;
 		DEBUG(1, "Using EC direct-access quirk for backlight brightness\n");
 	}
 
-	if (quirks->mmkeys) {
+	if (quirks->mmkeys != 0) {
 		set_keyboard_quirk();
 		printk(ACER_INFO "Setting keyboard quirk to enable multimedia keys\n");
 	}
 
-	if (quirks->bluetooth) {
+	if (quirks->bluetooth != 0) {
 		interface->capability |= ACER_CAP_BLUETOOTH;
 		DEBUG(1, "Using EC direct-access quirk for bluetooth\n");
 	}
 
-	if (quirks->wireless) {
+	if (quirks->wireless != 0) {
 		interface->capability |= ACER_CAP_WIRELESS;
 		DEBUG(1, "Using EC direct-access quirk for wireless\n");
 	}
 
-	if (quirks->max_brightness) {
+	if (quirks->max_brightness != 0) {
 		max_brightness = quirks->max_brightness;
 		DEBUG(1, "Changing maximum brightness level\n");
 	}
@@ -623,18 +620,18 @@ static void AMW0_init(struct Interface *iface) {
 	 * Set the cached "current" values to impossible ones so that
 	 * acer_commandline_init will definitely set them.
 	 */
-	if (!quirks->bluetooth) {
+	if (quirks->bluetooth == 0) {
 		help = 1;
 		data->bluetooth = -1;
 		printk(ACER_INFO "No EC data for reading bluetooth - bluetooth value when read will be a 'best guess'\n");
 	}
 
-	if (!quirks->wireless) {
+	if (quirks->wireless == 0) {
 		help = 1;
 		printk(ACER_INFO "No EC data for reading wireless - wireless value when read will be a 'best guess'\n");
 		data->wireless = -1;
 	}
-	if (!quirks->mailled) {
+	if (quirks->mailled == 0) {
 		help = 1;
 		printk(ACER_INFO "No EC data for reading mail LED - mail LED value when read will be a 'best guess'\n");
 		data->mailled = -1;
@@ -1407,7 +1404,7 @@ show_bool(touchpad, ACER_CAP_TOUCHPAD_READ);
 static ssize_t show_interface(struct device *dev, struct device_attribute *attr,
 	char *buf)
 {
-	return sprintf(buf, "%s\n", (interface->type == ACER_AMW0 ) ? "AMW0": "WMID");
+	return sprintf(buf, "%s\n", (interface->type == ACER_AMW0 ) ? "AMW0" : "WMID");
 }
 
 static DEVICE_ATTR(interface, S_IWUGO | S_IRUGO | S_IWUSR, show_interface, NULL);
@@ -1486,7 +1483,7 @@ static int acer_platform_resume(struct platform_device *device)
 		set_brightness((u8)data->brightness);
 
 	/* Check if this laptop requires the keyboard quirk */
-	if (quirks->mmkeys) {
+	if (quirks->mmkeys != 0) {
 		set_keyboard_quirk();
 		printk(ACER_INFO "Setting keyboard quirk to enable multimedia keys\n");
 	}
