@@ -32,9 +32,9 @@ Unfortunately, it is not possible to tell by the hardware alone which laptop ser
 
 (On some of the supported systems, the wireless (and sometimes bluetooth) switches are hardware controlled; acer_acpi can still control these as well though).
 
-If you discover your hardware is supported by acer_acpi and it is not listed here, please send a dump of /proc/acpi/dsdt to me (cathectic(@)gmail.com), also listing the make and model of your laptop.
+If you discover your hardware is supported by acer_acpi and it is not listed here, please send a dump of /sys/firmware/acpi/tables/DSDT (/proc/acpi/dsdt on older kernels) to me (cathectic(@)gmail.com), also listing the make and model of your laptop.
 
-If your hardware is not listed on either supported or unsupported, and acer_acpi does not load, please send me the dump of /proc/acpi/dsdt and the make and model anyway, as that way we can decide if acer_acpi just needs tweaking to work on your hardware, or so we can definitely rule out your hardware as compatible.
+If your hardware is not listed on either supported or unsupported, and acer_acpi does not load, please send me the dump of /sys/firmware/acpi/tables/DSDT (/proc/acpi/dsdt on older kernels) and the make and model anyway, as that way we can decide if acer_acpi just needs tweaking to work on your hardware, or so we can definitely rule out your hardware as compatible.
 
 If your hardware is listed as _not_ having a dump available, please send one - we are looking into any additional functionality that acer_acpi can expose (which, at the moment, seems to be none).
 
