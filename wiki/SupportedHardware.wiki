@@ -128,6 +128,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 5030 series [c,d,n]
   * 5500 series [c,d,n]
   * 5510 series [c,dw,n]
+  * 5720 series [c,d,2 - This should be a WMID laptop. Will be supported in the next release]
 
 ====Extensa====
   * 4100 series [c,d,n]
