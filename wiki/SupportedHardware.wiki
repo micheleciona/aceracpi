@@ -62,6 +62,7 @@ Legend:
   * 3050 series [u,dw,2]
   * 3610 series [c,d,1]
   * 3620 series [c,d,1]
+  * 3680 series [c,d,2]
   * 4520 series [u,dw]
   * 5020 series [c,d,1]
   * 5040 series [c,d,1]
