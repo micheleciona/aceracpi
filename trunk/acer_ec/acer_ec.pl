@@ -4,7 +4,7 @@
 #Copyright (C) 2007  Petr Tomasek     tomasek (#) etf,cuni,cz
 #Copyright (C) 2007  Carlos Corbacho  cathectic (at) gmail.com
 #
-#Version 0.4 (2007-09-04)
+#Version 0.5 (2007-10-24)
 #
 #This program is free software; you can redistribute it and/or
 #modify it under the terms of the GNU General Public License
@@ -76,7 +76,7 @@ sub outb
 sub wait_write
 {
 	my $i = 0;
-	while ((inb(0x66) & 0x02) && ($i < 10000)) {
+	while ((inb($_[0]) & 0x02) && ($i < 10000)) {
 		sleep(0.01);
 		$i++;
 	}
@@ -86,31 +86,41 @@ sub wait_write
 sub wait_read
 {
 	my $i = 0;
-	while (!(inb(0x66) & 0x01) && ($i < 10000)) {
+	while (!(inb($_[0]) & 0x01) && ($i < 10000)) {
 		sleep(0.01);
 		$i++;
 	}
 	return -($i == 10000);
 }
 
+sub wait_write_ec
+{
+	wait_write(0x66);
+}
+
+sub wait_read_ec
+{
+	wait_read(0x66);
+}
+
 sub send_ec
 {
-	if (!wait_write()) { outb($_[0], 0x66); }
-	if (!wait_write()) { outb($_[1], 0x62); }
+	if (!wait_write_ec()) { outb($_[0], 0x66); }
+	if (!wait_write_ec()) { outb($_[1], 0x62); }
 }
 
 sub write_ec
 {
-	if (!wait_write()) { outb(0x81, 0x66 ); }
-	if (!wait_write()) { outb($_[0], 0x62); }
-	if (!wait_write()) { outb($_[1], 0x62); }
+	if (!wait_write_ec()) { outb(0x81, 0x66 ); }
+	if (!wait_write_ec()) { outb($_[0], 0x62); }
+	if (!wait_write_ec()) { outb($_[1], 0x62); }
 }
 
 sub read_ec
 {
-	if (!wait_write()) { outb(0x80, 0x66 ); }
-	if (!wait_write()) { outb($_[0], 0x62); }
-	if (!wait_read())  { inb(0x62); }
+	if (!wait_write_ec()) { outb(0x80, 0x66 ); }
+	if (!wait_write_ec()) { outb($_[0], 0x62); }
+	if (!wait_read_ec())  { inb(0x62); }
 }
 
 sub print_regs
@@ -272,6 +282,25 @@ if (!$ARGV[0]){
 	} else {
 		print "second argument must be a number between 0 and 15\n";
 	}
+} elsif ($ARGV[0] eq "forcekc") {
+	initialize_ioports();
+	my ($kbdata, $cont, $kbreg);
+	for ($kbreg = 0; $kbreg < 256; $kbreg++) {
+		for ($kbdata = 0; $kbdata < 256; $kbdata++) {
+			if (!wait_write(0x64)) { outb($kbreg, 0x64); }
+			if (!wait_write(0x64)) { outb($kbdata,   0x60); }
+
+			print "$kbreg, $kbdata\n";
+			#print "Continue? y/n\n";
+			#$cont = <>;
+
+			#if ($cont == 'n') {
+			#	last;
+			#}
+			#sleep 1;
+		}
+	}
+	close_ioports();
 } else {
 	print "wrong arguments!\n";
 }
