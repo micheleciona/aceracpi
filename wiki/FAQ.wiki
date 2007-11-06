@@ -7,38 +7,34 @@
 
 Jump to the [http://code.google.com/p/aceracpi/ main page] to find out.
 
-==2. What hardware is supported?==
+==2. What hardware is supported or unsupported?==
 
-See http://code.google.com/p/aceracpi/wiki/SupportedHardware
+See http://code.google.com/p/aceracpi/wiki/SupportedHardware (although the list is incomplete)
 
-==3. What hardware is unsupported?==
+==3. It doesn't work on supported hardware! I get "Unable to register driver, aborting!"==
 
-I know for a fact that aceracpi doesn't work on the Aspire 1500 series, or the Acer Ferrari 4000 series. The ACPI interfaces we use don't exist on that machine.
+Please upgrade to the latest version of acer_acpi. If that still doesn't work, please file a bug.
 
-==4. It doesn't work on supported hardware! I get "Unable to register driver, aborting!"==
-
-Please upgrade to the latest version of acer_acpi
-
-==5. "Sorry, not yet implemented" or "Sorry, reading status not yet implemented"==
+==4. "Sorry, not yet implemented" or "Sorry, reading status not yet implemented"==
 
 Please upgrade to the latest version of acer_acpi
 
-==6. dmesg tells me "No or unsupported WMI interface, unable to load"==
+==5. dmesg tells me "No or unsupported WMI interface, unable to load"==
 
 Your laptop does not have the WMI-ACPI interface we use to control the hardware. There may be an alternative interface we don't know about - in order to find it, you'll need to do some disassembly of your ACPI DSDT.
 
-==7. dmesg tells me "acer_acpi: Unknown symbol led_classdev_unregister"==
+==6. dmesg tells me "acer_acpi: Unknown symbol led_classdev_unregister"==
 
 You need to enable the LED subsystem in your kernel configuration.
 
-==8. When is the next version of aceracpi coming out?==
+==7. When is the next version of aceracpi coming out?==
 
 When It's Ready(TM).
 
 
 And finally, not a frequently-asked-question ...
 
-==9. Can I maintain a package for $LINUX_DISTRO?==
+==8. Can I maintain a package for $LINUX_DISTRO?==
 
 Feel free! That's what the GPL is for :-) But I'd appreciate an email, so I know in advance where to direct questions ;-)
 
@@ -52,6 +48,6 @@ acer_acpi relies on the WMI-ACPI interface device (defined by the laptops ACPI i
 
 The problem with this approach is that WMI ACPI is used on more than just acer_acpi compatible laptops. The correct solution is to create a new driver, wmi.c, that would parse the WMI device, and provide the methods to us in a way that makes them available for all future WMI based drivers (and a method that is somewhat "saner" than the current one - although with an MS based 'specification', this is a somewhat relative term).
 
-(wmi.c is in progress by me (Carlos)).
+(wmi.c is in progress by me (Carlos) - I have submitted my initial work the ACPI mailing list, and it is currently in the review & modification process before acceptance).
 
 acer_acpi would then be rebased against this wmi driver (rather than the current mess of trying to maintain the ACPI code to talk to the two different WMI interfaces ourselves - this is currently being done in acer_acpi 0.10).
