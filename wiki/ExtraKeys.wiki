@@ -27,7 +27,7 @@ Until recently, there was no 'unified' place to do this - (U/K/X)buntu and SuSE 
 
 The [http://hughsient.livejournal.com/29730.html "Unfuck my keyboard"] project aims to move all this keyboard mapping into HAL, since HAL is a far better cross-platform solution to the problem (and since Slackware 12.0 now includes HAL, I (Carlos) am now happy to support such an initiative :-)
 
-HAL will use DMI data (aka ask the BIOS) to find out what your laptop is, then match this to user submitted data to map the scancodes-to-key codes appropriately. This functionality is not yet available in released versions of HAL (it will be in 0.5.10 and newer - there is also regularly updated build of the latest development HAL for Fedora users).
+HAL will use DMI data (aka ask the BIOS) to find out what your laptop is, then match this to user submitted data to map the scancodes-to-key codes appropriately. This functionality is available in HAL 0.5.10 and later versions.
 
 What HAL needs is information from users on which keys to map scancodes to for different laptops.
 
@@ -108,7 +108,7 @@ the brightness keys do not emit any scancodes).
 
 = X =
 
-The next step is to map the kernel key codes to X key codes for X (so you can use these keys with your favourite window manager/ desktop environment). I have already submitted an "acer_laptop" layout upstream (it will be in the next post 1.0 release of xkeyboard-config) - however, it's still useful to check that this applies to all Acer laptops.
+The next step is to map the kernel key codes to X key codes for X (so you can use these keys with your favourite window manager/ desktop environment). I have already submitted an "acer_laptop" layout upstream (it is in xkeyboard-config as of version 1.1) - however, it's still useful to check that this applies to all Acer laptops.
 
 For all the extra keys that _don't_ produce an error in dmesg, please run 'xev' in a terminal, whilst running X (e.g. in Konsole). Press the key, and report back to me (Carlos - cathectic(@)gmail.com) the key and its keycode.
 
