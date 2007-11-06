@@ -92,6 +92,7 @@ as working - if your laptop works and is not on here, please report back.
 ==== Travelmate ====
   * 2410 series [c,dw,1]
   * 2420 series [c,d,1]
+  * 2480 series [c,dw,2]
   * 2490 series [c,d,2,k]
   * 3040 series [c,d,2]
   * 3260 series [c,d,2]
@@ -169,3 +170,74 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 
 ===Compal===
   * CL56 [c,d,n]
+
+== Unknown ==
+
+I have no information on these laptops either way - reports from the field (with DSDTs) would be much appreciated. (This list is also _very_ incomplete).
+
+===Acer===
+  * 2420 [u,dw]
+  * 2920 [u,dw]
+  * 3100 [u,dw] - Presumed to be identical to 5100
+  * 3690 [u,dw]
+  * 4310 [u,dw]
+  * 4315 [u,dw] - Strange name, taken from Acer's website
+  * 4320 [u,dw]
+  * 4720 [u,dw]
+  * 4920 [u,dw]
+  * 5110 [u,dw]
+  * 5310 [u,dw]
+  * 5315 [u,dw]
+  * 5320 [u,dw]
+  * 5520 [u,dw]
+  * 5590 [u,dw]
+  * 5610 [u,dw]
+  * 5630 [u,dw]
+  * 5710 [u,dw]
+  * 5910 [u,dw]
+  * 5920 [u,dw]
+  * 7000 [u,dw]
+  * 7110 [u,dw]
+  * 7220 [u,dw]
+  * 7520 [u,dw]
+  * 7720 [u,dw]
+  * 9120 [u,dw]
+  * 9410 [u,dw]
+  * 9510 [u,dw]
+  * 9520 [u,dw]
+  * 9800 [u,dw]
+  * 9810 [u,dw]
+  * 9920 [u,dw]
+
+====TravelMate====
+  * C210 [u,dw]
+  * 3020 [u,dw]
+  * 3040 [u,dw]
+  * 3270 [u,dw]
+  * 3290 [u,dw]
+  * 4200 [u,dw]
+  * 4220 [u,dw]
+  * 4230 [u,dw]
+  * 4260 [u,dw]
+  * 4270 [u,dw]
+  * 4320 [u,dw]
+  * 4520 [u,dw]
+  * 4720 [u,dw]
+  * 5220 [u,dw]
+  * 5310 [u,dw]
+  * 5320 [u,dw]
+  * 5520 [u,dw]
+  * 5610 [u,dw] - Maybe supported, same manual as 5620
+  * 6291 [u,dw] - Strange name, taken from Acer's website
+  * 6292 [u,dw] - Strange name, taken from Acer's website
+  * 6410 [u,dw]
+  * 6460 [u,dw]
+  * 6492 [u,dw]
+  * 7220 [u,dw]
+  * 7520 [u,dw]
+  * 7720 [u,dw]
+  * 8210 [u,dw]
+
+====Ferrari====
+  * 1000 series [u,dw]
+  * 5000 series [u,dw]
