@@ -52,6 +52,6 @@ acer_acpi relies on the WMI-ACPI interface device (defined by the laptops ACPI i
 
 The problem with this approach is that WMI ACPI is used on more than just acer_acpi compatible laptops. The correct solution is to create a new driver, wmi.c, that would parse the WMI device, and provide the methods to us in a way that makes them available for all future WMI based drivers (and a method that is somewhat "saner" than the current one - although with an MS based 'specification', this is a somewhat relative term).
 
-(wmi.c is in progress by Len Brown, the Linux ACPI maintainer - hopefully, I'll be able to get more information on this after the Kernel summit at the start of September).
+(wmi.c is in progress by me (Carlos)).
 
-acer_acpi would then be rebased against this wmi driver (rather than the current mess of trying to maintain the ACPI code to talk to the two different WMI interfaces ourselves).
+acer_acpi would then be rebased against this wmi driver (rather than the current mess of trying to maintain the ACPI code to talk to the two different WMI interfaces ourselves - this is currently being done in acer_acpi 0.10).
