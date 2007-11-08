@@ -4,7 +4,7 @@
 #Copyright (C) 2007  Petr Tomasek     tomasek (#) etf,cuni,cz
 #Copyright (C) 2007  Carlos Corbacho  cathectic (at) gmail.com
 #
-#Version 0.5 (2007-10-24)
+#Version 0.6 (2007-11-08)
 #
 #This program is free software; you can redistribute it and/or
 #modify it under the terms of the GNU General Public License
@@ -123,6 +123,12 @@ sub read_ec
 	if (!wait_read_ec())  { inb(0x62); }
 }
 
+sub write_kc
+{
+	if (!wait_write(0x64)) { outb($_[0], 0x64); }
+	if (!wait_write(0x64)) { outb($_[1], 0x60); }
+}
+
 sub print_regs
 {
 	initialize_ioports();
@@ -184,11 +190,13 @@ if (!$ARGV[0]){
 	print "\'acer_ec setfanthresh <temp>\' \t\t\t\tset temperature threshhold to <temp>, DANGEROUS!\n";
 	print "\'acer_ec getfanthresh\' \t\t\t\tget temperature threshhold\n";
 	print "\'acer_ec <temp-number> <temperature>\' \tfor setting a temperature\n";
+	print "where <temp-number> is from 0-7, and <temperture> is from 0-255\n";
 	print "\'acer_ec ?= <reg>\' \t\tQuery register's value\n";
 	print "\'acer_ec := <reg> <val>\' \tSet register's value\n";
 	print "\'acer_ec +f <reg> <val>\' \tOr register's value with val (to set flags)\n";
 	print "\'acer_ec -f <reg> <val>\' \tAnd register's value with ~val (to clear flags)\n";
-	print "where <temp-number> is from 0-7, and <temperture> is from 0-255\n";
+	print "\'forcekc\' \tTry all possible values on writeable RAM of keyboard controller\n";
+	print "\'kcw <cmd> <val>\' \tWrite a command and a value to the keyboard controller\n";
 } elsif ($ARGV[0] eq "regs") {
 	print_regs();
 } elsif ($ARGV[0] eq "getled") {
@@ -261,12 +269,14 @@ if (!$ARGV[0]){
 } elsif ($ARGV[0] eq "ledon") {
 	# TM2490 only - needs testing
 	initialize_ioports();
-        send_ec (0x59, 0x92);
+	if (!wait_write(0x64)) { outb(0x59, 0x64); }
+	if (!wait_write(0x64)) { outb(0x92,   0x60); }
 	close_ioports();
 } elsif ($ARGV[0] eq "ledoff") {
 	# TM2490 only - needs testing
 	initialize_ioports();
-        send_ec (0x59, 0x93);
+	if (!wait_write(0x64)) { outb(0x59, 0x64); }
+	if (!wait_write(0x64)) { outb(0x93,   0x60); }
 	close_ioports();
 } elsif ($ARGV[0] eq "getfanthresh") {
 	initialize_ioports();
@@ -283,23 +293,25 @@ if (!$ARGV[0]){
 		print "second argument must be a number between 0 and 15\n";
 	}
 } elsif ($ARGV[0] eq "forcekc") {
+	# Be smart - we only send the commands for writing to keyboard RAM
 	initialize_ioports();
 	my ($kbdata, $cont, $kbreg);
-	for ($kbreg = 0; $kbreg < 256; $kbreg++) {
+	for ($kbreg = 0x40; $kbreg <= 0x7f; $kbreg++) {
 		for ($kbdata = 0; $kbdata < 256; $kbdata++) {
-			if (!wait_write(0x64)) { outb($kbreg, 0x64); }
-			if (!wait_write(0x64)) { outb($kbdata,   0x60); }
+			write_kc($kbreg, $kbdata);
 
-			print "$kbreg, $kbdata\n";
-			#print "Continue? y/n\n";
-			#$cont = <>;
-
-			#if ($cont == 'n') {
-			#	last;
-			#}
-			#sleep 1;
+			print sprintf("%0#4x", $kbreg), ", ", sprintf("%0#4x", $kbdata), "\n";
+			print "Continue? y/n: ";
+			$cont = <STDIN>;
+			if ($cont eq "n") {
+				last;
+			}
 		}
 	}
+	close_ioports();
+} elsif ($ARGV[0] eq "kcw") {
+	initialize_ioports();
+	write_kc($ARGV[1], $ARGV[2]);
 	close_ioports();
 } else {
 	print "wrong arguments!\n";
