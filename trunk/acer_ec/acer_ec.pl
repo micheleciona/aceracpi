@@ -4,7 +4,7 @@
 #Copyright (C) 2007  Petr Tomasek     tomasek (#) etf,cuni,cz
 #Copyright (C) 2007  Carlos Corbacho  cathectic (at) gmail.com
 #
-#Version 0.6 (2007-11-08)
+#Version 0.6.1 (2007-11-08)
 #
 #This program is free software; you can redistribute it and/or
 #modify it under the terms of the GNU General Public License
@@ -296,7 +296,7 @@ if (!$ARGV[0]){
 	# Be smart - we only send the commands for writing to keyboard RAM
 	initialize_ioports();
 	my ($kbdata, $cont, $kbreg);
-	for ($kbreg = 0x40; $kbreg <= 0x7f; $kbreg++) {
+	for ($kbreg = 0x40; $kbreg <= 0x5f; $kbreg++) {
 		for ($kbdata = 0; $kbdata < 256; $kbdata++) {
 			write_kc($kbreg, $kbdata);
 
