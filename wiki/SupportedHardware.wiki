@@ -88,6 +88,7 @@ as working - if your laptop works and is not on here, please report back.
 ====Extensa====
   * 4010 series [c,d,2]
   * 5010 series [c,d,2]
+  * 5220 series [c,d,1]
 
 ==== Travelmate ====
   * 2410 series [c,dw,1]
