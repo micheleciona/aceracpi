@@ -93,7 +93,7 @@ as working - if your laptop works and is not on here, please report back.
 ==== Travelmate ====
   * 2410 series [c,dw,1]
   * 2420 series [c,d,1]
-  * 2480 series [c,dw,2]
+  * 2480 series [c,d,2]
   * 2490 series [c,d,2,k]
   * 3040 series [c,d,2]
   * 3260 series [c,d,2]
