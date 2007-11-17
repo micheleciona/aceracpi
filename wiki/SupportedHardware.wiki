@@ -75,7 +75,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5570 series [c,d,2]
   * 5580 series [c,d,2]
   * 5610 series [c,d,2]
-  * 5630 series [c,d,2]
+  * 5630 series [c,d,2,k]
   * 5650 series [c,d,2,k]
   * 5670 series [c,d,2]
   * 5720 series [c,d,2 - Supported from 0.10 RC3]
