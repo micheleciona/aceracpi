@@ -60,6 +60,7 @@ as working - if your laptop works and is not on here, please report back.
 ===Acer===
 ====Aspire====
   * 1360 series [c,d,1]
+  * 3010 series [c,dw,1]
   * 3020 series [c,dw,1]
   * 3040 series [u,dw,2]
   * 3050 series [u,dw,2]
@@ -67,6 +68,7 @@ as working - if your laptop works and is not on here, please report back.
   * 3620 series [c,d,1]
   * 3680 series [c,d,2]
   * 4520 series [c,d,2]
+  * 5010 series [c,d,1]
   * 5020 series [c,d,1]
   * 5040 series [c,d,1]
   * 5050 series [c,d,2]
@@ -81,6 +83,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5720 series [c,d,2 - Supported from 0.10 RC3]
   * 5680 series [c,d,2,k]
   * 5920 series [c,d,2]
+  * 7520 series [c,d,2]
   * 9300 series [c,d,1]
   * 9420 series [c,d,1]
   * 9810 series [c,dw,2]
