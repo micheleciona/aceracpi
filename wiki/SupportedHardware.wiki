@@ -49,8 +49,9 @@ Legend:
   * n = No WMI ACPI interface, will not support
   * r = New WMI ACPI interface, requires reverse engineering
   * k = Requires a keyboard quirk to enable multimedia keys
-  * 1 = Version 1 (AMW0 interface)
-  * 2 = Version 2 (WMID interface)
+  * 1 = AMW0 interface
+  * 2 = WMID interface
+  * 3 = AMW0 v2 interface (AMW0 and WMID)
 
 == Supported ==
 
@@ -60,9 +61,10 @@ as working - if your laptop works and is not on here, please report back.
 ===Acer===
 ====Aspire====
   * 1360 series [c,d,1]
+  * 2920 [c,d,3]
   * 3010 series [c,dw,1]
   * 3020 series [c,dw,1]
-  * 3040 series [u,dw,2]
+  * 3040 series [u,dw,3]
   * 3050 series [u,dw,2]
   * 3610 series [c,d,1]
   * 3620 series [c,d,1]
@@ -70,7 +72,7 @@ as working - if your laptop works and is not on here, please report back.
   * 4520 series [c,d,2]
   * 5010 series [c,d,1]
   * 5020 series [c,d,1]
-  * 5040 series [c,d,1]
+  * 5040 series [c,d,3]
   * 5050 series [c,d,2]
   * 5100 series [c,d,2]
   * 5560 series [c,d,1]
@@ -80,13 +82,14 @@ as working - if your laptop works and is not on here, please report back.
   * 5630 series [c,d,2,k]
   * 5650 series [c,d,2,k]
   * 5670 series [c,d,2]
+  * 5710 [c,d,2]
   * 5720 series [c,d,2 - Supported from 0.10 RC3]
   * 5680 series [c,d,2,k]
   * 5920 series [c,d,2]
   * 7520 series [c,d,2]
   * 9300 series [c,d,1]
   * 9420 series [c,d,1]
-  * 9810 series [c,dw,2]
+  * 9810 series [c,d,2]
 
 ====Extensa====
   * 4010 series [c,d,2]
@@ -102,6 +105,7 @@ as working - if your laptop works and is not on here, please report back.
   * 3260 series [c,d,2]
   * 3620 series [c,d,2]
   * 4220 series [c,d,2]
+  * 4280 series [c,d,2]
   * 4400 series [c,d,1]
   * 5620 series [c,d,1]
   * 5720 series [c,d,1]
@@ -181,7 +185,6 @@ I have no information on these laptops either way - reports from the field (with
 
 ===Acer===
   * 2420 [u,dw]
-  * 2920 [u,dw]
   * 3100 [u,dw] - Presumed to be identical to 5100
   * 3690 [u,dw]
   * 4310 [u,dw]
@@ -197,7 +200,6 @@ I have no information on these laptops either way - reports from the field (with
   * 5590 [u,dw]
   * 5610 [u,dw]
   * 5630 [u,dw]
-  * 5710 [u,dw]
   * 5910 [u,dw]
   * 5920 [u,dw]
   * 7000 [u,dw]
