@@ -67,7 +67,7 @@ as working - if your laptop works and is not on here, please report back.
   * 3040 series [u,dw,3]
   * 3050 series [u,dw,2]
   * 3610 series [c,d,1]
-  * 3620 series [c,d,1]
+  * 3620 series [c,d,3]
   * 3680 series [c,d,2]
   * 4520 series [c,d,2]
   * 5010 series [c,d,1]
@@ -76,7 +76,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5050 series [c,d,2]
   * 5100 series [c,d,2]
   * 5520 series [c,d,2]
-  * 5560 series [c,d,1]
+  * 5560 series [c,d,3]
   * 5570 series [c,d,2]
   * 5580 series [c,d,2]
   * 5610 series [c,d,2]
@@ -88,18 +88,18 @@ as working - if your laptop works and is not on here, please report back.
   * 5680 series [c,d,2,k]
   * 5920 series [c,d,2]
   * 7520 series [c,d,2]
-  * 9300 series [c,d,1]
-  * 9420 series [c,d,1]
+  * 9300 series [c,d,3]
+  * 9420 series [c,d,3]
   * 9810 series [c,d,2]
 
 ====Extensa====
   * 4010 series [c,d,2]
   * 5010 series [c,d,2]
-  * 5220 series [c,d,1]
+  * 5220 series [c,d,3]
 
 ==== Travelmate ====
   * 2410 series [c,dw,1]
-  * 2420 series [c,d,1]
+  * 2420 series [c,d,3]
   * 2480 series [c,d,2]
   * 2490 series [c,d,2,k]
   * 3040 series [c,d,2]
@@ -108,8 +108,8 @@ as working - if your laptop works and is not on here, please report back.
   * 4220 series [c,d,2]
   * 4280 series [c,d,2]
   * 4400 series [c,d,1]
-  * 5620 series [c,d,1]
-  * 5720 series [c,d,1]
+  * 5620 series [c,d,3]
+  * 5720 series [c,d,3]
 
 ===Fujitsu Siemens===
 ====Amilo====
@@ -131,7 +131,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 1500 series [c,dw,n]
   * 1510 series [c,dw,n]
   * 1520 series [c,d,n]
-  * 1640 series [c,dw,n]
+  * 1640 series [c,d,n]
   * 1650 series [c,dw,n]
   * 1670 series [c,dw,n]
   * 1680 series [c,dw,n]
