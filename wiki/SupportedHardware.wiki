@@ -24,15 +24,13 @@ Unless you have bought the -3G version of a laptop series, you don't have 3G (un
 
 == Introduction ==
 
-To summarise: the driver only supports those laptops that present a WMI-ACPI interface (defined in your laptops ACPI implementation in the BIOS). So, any laptop that doesn't provide this interface is not supported.
+To summarise: the driver only supports those laptops that have an ACPI-WMI device (defined in your laptops DSDT). So, any laptop that doesn't provide this device is not supported.
 
-acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Siemens and one Medion laptop use the same WMI-ACPI interface as Acer.
+acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Siemens and one Medion laptop use the same ACPI-WMI interface as Acer.
 
 Unfortunately, it is not possible to tell by the hardware alone which laptop series require acer_acpi. The chances are, if you need to install LaunchManager or the Mobility Center add-on in Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
 
-(On some of the supported systems, the wireless (and sometimes bluetooth) switches are hardware controlled; acer_acpi can still control these as well though).
-
-If you discover your hardware is supported by acer_acpi and it is not listed here, please send a dump of /sys/firmware/acpi/tables/DSDT (/proc/acpi/dsdt on older kernels) to me (cathectic(@)gmail.com), also listing the make and model of your laptop.
+If you discover your hardware is supported by acer_acpi and it is not listed here, please send a dump of /sys/firmware/acpi/tables/DSDT (/proc/acpi/dsdt on older kernels) to me (carlos(@)strangeworlds.co.uk), also listing the make and model of your laptop.
 
 If your hardware is not listed on either supported or unsupported, and acer_acpi does not load, please send me the dump of /sys/firmware/acpi/tables/DSDT (/proc/acpi/dsdt on older kernels) and the make and model anyway, as that way we can decide if acer_acpi just needs tweaking to work on your hardware, or so we can definitely rule out your hardware as compatible.
 
@@ -66,10 +64,12 @@ as working - if your laptop works and is not on here, please report back.
   * 3020 series [c,dw,1]
   * 3040 series [u,dw,3]
   * 3050 series [u,dw,2]
+  * 3100 series [u,dw,2]
   * 3610 series [c,d,1]
   * 3620 series [c,d,3]
   * 3680 series [c,d,2]
   * 4520 series [c,d,2]
+  * 4315 series [c,d,3] - Strange name, confirmed by DMI
   * 5010 series [c,d,1]
   * 5020 series [c,d,1]
   * 5040 series [c,d,3]
@@ -159,6 +159,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 290 series [c,dw,n]
   * 350 series [c,dw,n]
   * 420 series [c,dw,n]
+  * 430 series [c,dw,n,k]
   * 520 series [c,d,n]
   * 610 series [c,d,n]
   * 650 series [c,d,n]
@@ -186,10 +187,8 @@ I have no information on these laptops either way - reports from the field (with
 
 ===Acer===
   * 2420 series [u,dw]
-  * 3100 series [u,dw] - Presumed to be identical to 5100
   * 3690 series [u,dw]
   * 4310 series [u,dw]
-  * 4315 series [u,dw] - Strange name, taken from Acer's website
   * 4320 series [u,dw]
   * 4720 series [u,dw]
   * 4920 series [u,dw]
