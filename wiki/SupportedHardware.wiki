@@ -12,7 +12,7 @@ Unfortunately, we can't detect this on acer_acpi (on WMID, if you try to write t
 
 ===Mail LED===
 
-This is only supported on the TravelMate 2490 by driving it through the Embedded Controller. To test this on another WMID laptop, load acer_acpi with "force_series=2490".
+This is only supported on some WMID laptops by driving it through the Embedded Controller. To test this on another WMID laptop, load acer_acpi with "force_series=2490".
 
 ===3G===
 
@@ -96,6 +96,10 @@ as working - if your laptop works and is not on here, please report back.
   * 4010 series [c,d,2]
   * 5010 series [c,d,2]
   * 5220 series [c,d,3]
+
+====Ferrari====
+  * 1000 series [c,d,2]
+  * 5000 series [c,d,2]
 
 ==== Travelmate ====
   * 2410 series [c,dw,1]
@@ -242,7 +246,3 @@ I have no information on these laptops either way - reports from the field (with
   * 7520 series [u,dw]
   * 7720 series [u,dw]
   * 8210 series [u,dw]
-
-====Ferrari====
-  * 1000 series [u,dw]
-  * 5000 series [u,dw]
