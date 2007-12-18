@@ -69,12 +69,13 @@ as working - if your laptop works and is not on here, please report back.
   * 3620 series [c,d,3]
   * 3680 series [c,d,2]
   * 4520 series [c,d,2]
-  * 4315 series [c,d,3] - Strange name, confirmed by DMI
+  * 4315 series [c,d,3]
   * 5010 series [c,d,1]
   * 5020 series [c,d,1]
   * 5040 series [c,d,3]
   * 5050 series [c,d,2]
   * 5100 series [c,d,2]
+  * 5315 series [c,d,2]
   * 5520 series [c,d,2]
   * 5560 series [c,d,3]
   * 5570 series [c,d,2]
@@ -84,7 +85,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5650 series [c,d,2,k]
   * 5670 series [c,d,2]
   * 5710 series [c,d,2]
-  * 5720 series [c,d,2 - Supported from 0.10 RC3]
+  * 5720 series [c,d,2]
   * 5680 series [c,d,2,k]
   * 5920 series [c,d,2]
   * 7520 series [c,d,2]
@@ -112,6 +113,7 @@ as working - if your laptop works and is not on here, please report back.
   * 4220 series [c,d,2]
   * 4280 series [c,d,2]
   * 4400 series [c,d,1]
+  * 5520 series [c,d,3]
   * 5620 series [c,d,3]
   * 5720 series [c,d,3]
 
@@ -198,7 +200,6 @@ I have no information on these laptops either way - reports from the field (with
   * 4920 series [u,dw]
   * 5110 series [u,dw]
   * 5310 series [u,dw]
-  * 5315 series [u,dw]
   * 5320 series [u,dw]
   * 5590 series [u,dw]
   * 5610 series [u,dw]
@@ -235,7 +236,6 @@ I have no information on these laptops either way - reports from the field (with
   * 5220 series [u,dw]
   * 5310 series [u,dw]
   * 5320 series [u,dw]
-  * 5520 series [u,dw]
   * 5610 series [u,dw] - Maybe supported, same manual as 5620
   * 6291 series [u,dw] - Strange name, taken from Acer's website
   * 6292 series [u,dw] - Strange name, taken from Acer's website
