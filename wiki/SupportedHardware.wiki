@@ -117,6 +117,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5620 series [c,d,3]
   * 5720 series [c,d,3]
   * 6290 series [c,d,3]
+  * 8210 series [c,d,1]
 
 ===Fujitsu Siemens===
 ====Amilo====
@@ -246,4 +247,3 @@ I have no information on these laptops either way - reports from the field (with
   * 7220 series [u,dw]
   * 7520 series [u,dw]
   * 7720 series [u,dw]
-  * 8210 series [u,dw]
