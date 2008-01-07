@@ -19,6 +19,8 @@ This will output all the EC registers and their current values on your laptop. T
 
 e.g. the register at row B0 and column 0A is register 0xBA (0x is used to indicate this is a hexadecimal number).
 
+*NOTE:* acer_ec.pl is not guaranteed to run properly, and can easily lock up your system (we know of a few laptops so far where this happens). Please do not report bugs for these, as there is not much we can do about it.
+
 = Embedded Controller =
 
 The Embedded Controller (EC) has 255 registers (0x00 to 0xFF). All EC registers are 8 bit, and we read their contents as unsigned decimal values from 0 to 255.
