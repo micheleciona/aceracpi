@@ -190,6 +190,11 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 ===Compal===
   * CL56 [c,d,n]
 
+===Prestigio===
+
+====Nobile====
+  * 157 [c,d,n]
+
 == Unknown ==
 
 I have no information on these laptops either way - reports from the field (with DSDTs) would be much appreciated. (This list is also _very_ incomplete).
