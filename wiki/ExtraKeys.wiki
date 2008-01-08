@@ -3,7 +3,9 @@
 
 = Disclaimer =
 
-I am _not_ a HAL developer - I just think it's about time someone came up with a proper solution to the non-functioning keys problem, and this is the best one of the lot.
+I am _not_ a HAL developer - I just think it's about time someone came up with a proper solution to the non-functioning keys problem, and this one from the HAL developers is the best one of the lot.
+
+And since a lot of Acer laptop users come through here, I might as well try to steer them into something useful.
 
 = Background =
 
