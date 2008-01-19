@@ -31,7 +31,7 @@ You need to enable the LED subsystem in your kernel configuration.
 
 You need to enable the backlight subsystem in your kernel configuration.
 
-==8. When is the next version of aceracpi coming out?==
+==8. When is the next version of acer_acpi coming out?==
 
 When It's Ready(TM).
 
@@ -56,4 +56,4 @@ acer_acpi has now been rebased against this wmi driver (rather than the current 
 
 Current status:
 
-Still (as of January 2008!) waiting on the ACPI maintainer to review my work...
+Still (as of January 2008!) waiting on the ACPI maintainer to review my work on WMI and acer-wmi (the upstream port of acer_acpi)...
