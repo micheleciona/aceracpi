@@ -63,7 +63,7 @@ as working - if your laptop works and is not on here, please report back.
   * 3010 series [c,dw,1]
   * 3020 series [c,dw,1]
   * 3040 series [u,dw,3]
-  * 3050 series [u,dw,2]
+  * 3050 series [c,d,2]
   * 3100 series [u,dw,2]
   * 3610 series [c,d,1]
   * 3620 series [c,d,3]
