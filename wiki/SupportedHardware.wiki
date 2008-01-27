@@ -91,6 +91,7 @@ as working - if your laptop works and is not on here, please report back.
   * 7110 series [c,d,3]
   * 7520 series [c,d,2]
   * 7720 series [c,d,2]
+  * 9110 series [c,d,2]
   * 9300 series [c,d,3]
   * 9420 series [c,d,3]
   * 9810 series [c,d,2]
