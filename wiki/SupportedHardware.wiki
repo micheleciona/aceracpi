@@ -121,6 +121,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5620 series [c,d,3]
   * 5720 series [c,d,3]
   * 6290 series [c,d,3]
+  * 6590 series [c,d,2]
   * 8210 series [c,d,1]
 
 ===Fujitsu Siemens===
