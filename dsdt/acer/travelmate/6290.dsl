@@ -2,7 +2,7 @@
  * Intel ACPI Component Architecture
  * AML Disassembler version 20061109
  *
- * Disassembly of 6290, Tue Dec 25 01:34:04 2007
+ * Disassembly of 6290, Thu Jan 31 10:40:28 2008
  *
  *
  * Original Table Header:
