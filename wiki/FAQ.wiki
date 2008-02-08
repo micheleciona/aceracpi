@@ -44,16 +44,10 @@ Feel free! That's what the GPL is for :-) But I'd appreciate an email, so I know
 
 ==10. When will acer_acpi go mainline?==
 
-Short answer: A while longer yet
+acer-wmi, the upstream port of acer_acpi, was merged into 2.6.25, so the first kernel with this will be 2.6.25-rc1.
 
-Long answer:
+==12. What will happen to acer_acpi now?==
 
-acer_acpi relies on the WMI-ACPI interface device (defined by the laptops ACPI implementation) - what we currently do is register this device for ourselves, and just call the methods inside it that we know about.
+acer_acpi will now go into bug-fixing only mode, and be maintained exclusively for older kernels.
 
-The problem with this approach is that WMI ACPI is used on more than just acer_acpi compatible laptops. The correct solution is to create a new driver, wmi.c, that would parse the WMI device, and provide the methods to us in a way that makes them available for all future WMI based drivers (and a method that is somewhat "saner" than the current one - although with an MS based 'specification', this is a somewhat relative term).
-
-acer_acpi has now been rebased against this wmi driver (rather than the current mess of trying to maintain the ACPI code to talk to the two different WMI interfaces ourselves).
-
-Current status:
-
-Still (as of January 2008!) waiting on the ACPI maintainer to review my work on WMI and acer-wmi (the upstream port of acer_acpi)...
+All development work will switch to the in-kernel acer-wmi instead.
