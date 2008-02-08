@@ -46,7 +46,7 @@ Feel free! That's what the GPL is for :-) But I'd appreciate an email, so I know
 
 acer-wmi, the upstream port of acer_acpi, was merged into 2.6.25, so the first kernel with this will be 2.6.25-rc1.
 
-==12. What will happen to acer_acpi now?==
+==11. What will happen to acer_acpi now?==
 
 acer_acpi will now go into bug-fixing only mode, and be maintained exclusively for older kernels.
 
