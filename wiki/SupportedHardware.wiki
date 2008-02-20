@@ -103,6 +103,7 @@ as working - if your laptop works and is not on here, please report back.
 
 ====Ferrari====
   * 1000 series [c,d,2]
+  * 1100 series [c,d,3]
   * 5000 series [c,d,2]
 
 ==== Travelmate ====
