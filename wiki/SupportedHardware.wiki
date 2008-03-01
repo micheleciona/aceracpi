@@ -80,6 +80,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5560 series [c,d,3]
   * 5570 series [c,d,2]
   * 5580 series [c,d,2]
+  * 5600 series [c,d,2]
   * 5610 series [c,d,2]
   * 5630 series [c,d,2,k]
   * 5650 series [c,d,2,k]
@@ -192,6 +193,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 4150 series [c,d,n]
   * 4500 series [c,dw,n]
   * 4600 series [c,dw,n]
+  * 4650 series [c,d,n]
   * 8100 series [c,d,n]
 
 ===Compal===
