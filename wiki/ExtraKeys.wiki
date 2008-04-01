@@ -3,7 +3,7 @@
 
 = Disclaimer =
 
-I am _not_ a HAL developer - I just think it's about time someone came up with a proper solution to the non-functioning keys problem, and this one from the HAL developers is the best one of the lot.
+I am _not_ a HAL developer (although as of 1st April 2008, I do have commit access to hal-info) - I just think it's about time someone came up with a proper solution to the non-functioning keys problem, and this one from the HAL developers is the best one of the lot.
 
 And since a lot of Acer laptop users come through here, I might as well try to steer them into something useful.
 
@@ -35,12 +35,7 @@ What HAL needs is information from users on which keys to map scancodes to for d
 
 = What you need to do =
 
-If you've seen enough, you know what I'm doing and want to dive right in 
-(aka "Hurt me plenty"), then just go here (In particular, I reccommend looking at the Aspire 5020 as a good template):
-
-http://people.freedesktop.org/~hughsient/quirk/quirk-keymap-index.html
-
-If, on the other hand, you want to help out, but are not really very confident in submitting patches or all this XML stuff (aka "I'm too young to die"), then *I am happy to produce and submit patches to HAL on your behalf*. I will need you to e-mail the following to me (Carlos - cathectic(@)gmail.com):
+*I am happy to produce and submit patches to HAL on your behalf*. I will need you to e-mail the following to me (Carlos - carlos(@)strangeworlds.co.uk):
 
 ((U/K/X)buntu and SuSE users: If you have hotkey-setup installed, _please_ disable 
 or remove it and then reboot before doing this).
@@ -108,10 +103,10 @@ Not all keys will generate error messages in dmesg (e.g. on my Aspire 5021,
 the multimedia keys are already mapped to proper keycodes by the kernel, and 
 the brightness keys do not emit any scancodes).
 
+If you have a key which is already mapped, but to the wrong keycode, also let me know.
+
 = X =
 
 The next step is to map the kernel key codes to X key codes for X (so you can use these keys with your favourite window manager/ desktop environment).
 
-Pre X.Org 7.3 -> Use the 'acer_laptop' keyboard layout
-
-X.org 7.3 and newer -> Input hotplugging takes care of the X mapping (as long as your laptop has been added to HAL).
+You can use either the 'acer_laptop' keyboard layout, or use the evdev driver (I use evdev).
