@@ -125,6 +125,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5620 series [c,d,3]
   * 5720 series [c,d,3]
   * 6290 series [c,d,3]
+  * 6292 series [c,d,3] - Confirmed via DMI
   * 6590 series [c,d,2]
   * 7520 series [c,d,3]
   * 8210 series [c,d,1]
@@ -250,7 +251,6 @@ I have no information on these laptops either way - reports from the field (with
   * 5320 series [u,dw]
   * 5610 series [u,dw] - Maybe supported, same manual as 5620
   * 6291 series [u,dw] - Strange name, taken from Acer's website
-  * 6292 series [u,dw] - Strange name, taken from Acer's website
   * 6410 series [u,dw]
   * 6460 series [u,dw]
   * 6492 series [u,dw]
