@@ -7,6 +7,18 @@ The Embedded Controller (EC) is an interface to the lower level hardware on lapt
 
 However, on quite a few laptops, it is now clear that to access certain devices, we are going to have to deal directly with the EC (especially on AMW0 laptops, where we have no way of knowing the true status of wireless, bluetooth and the mail LED without accessing the EC directly). The problem is that how the EC is wired varies from model to model, forcing us to find out about the EC on as many models as we can.
 
+= Read first =
+
+If you have a laptop that is:
+
+  * listed in SupportedHardware as type 2/ 3 (WMID or AMW0 v2) -> The only information we may need for your laptop is how to control the mail LED. WMI exposes everything else, so I don't need you to work out what EC registers correspond to the status of the other devices.
+
+  * listed in SupportedHardware as type 1 (AMW0) -> You should only need to touch this script if acer_acpi can't read the status of your wireless, bluetooth backlight and mail LED properly.
+
+  * not listed in SupportedHardware - Please send me your DSDT
+
+  * listed as unsupported in SupportedHardware - I won't add EC quirks to acer_acpi for your laptop. EC quirks are meant in acer_acpi to act as a compliment for the bits that WMI doesn't expose to us, and I don't want to end up with maintaining a large set of different EC quirks for all manner of Acer laptops out there, which I consider out-of-scope for acer_acpi.
+
 = Tools =
 
 [http://aceracpi.googlecode.com/svn/trunk/acer_ec/acer_ec.pl acer_ec.pl]
