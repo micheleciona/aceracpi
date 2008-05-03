@@ -167,6 +167,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 
 ====Extensa====
   * 4100 series [c,d,n]
+  * 6700 series [c,d,n]
 
 ====Ferrari====
   * 4000 series [c,d,n]
