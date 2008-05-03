@@ -75,7 +75,9 @@ Mail LED
 
 = What I Need From You =
 
-If you manage to find something, please report back to me (Carlos - cathectic(@)gmail.com):
+If you manage to find something, please report back to me (Carlos - carlos(@)strangeworlds.co.uk):
+
+1) Please check the 'Read me' section first to see if I actually do need anything from you.
 
 1) Whatever you have discovered (e.g. brightness is controlled through EC register 0x83, or wireless status is stored in register 0x0A, 'on' is value X, 'off' is value Y)
 
