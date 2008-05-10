@@ -58,7 +58,8 @@ as working - if your laptop works and is not on here, please report back.
 
 ===Acer===
 ====Aspire====
-  * 1360 series [c,d,1]
+  * 1360 series [c,d,1 - BIOS version 1.11 or newer only]
+  * 1520 series [c,d,1 - BIOS version 1.11 or newer only]
   * 2920 series [c,d,3]
   * 3010 series [c,dw,1]
   * 3020 series [c,dw,1]
@@ -146,10 +147,11 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 ====Aspire====
   * 1310 series [c,d,n]
   * 1350 series [c,d,n]
+  * 1360 series [u,d,n - Pre 1.11 BIOS (upgrade your BIOS to at least 1.11 to get WMI)]
   * 1410 series [c,d,n]
   * 1500 series [c,dw,n]
   * 1510 series [c,dw,n]
-  * 1520 series [c,d,n]
+  * 1520 series [c,d,n - Pre 1.11 BIOS (upgrade your BIOS to at least 1.11 to get WMI)]
   * 1640 series [c,d,n]
   * 1650 series [c,dw,n]
   * 1670 series [c,dw,n]
