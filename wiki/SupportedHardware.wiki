@@ -149,9 +149,9 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 1350 series [c,d,n]
   * 1360 series [u,d,n - Pre 1.11 BIOS (upgrade your BIOS to at least 1.11 to get WMI)]
   * 1410 series [c,d,n]
-  * 1500 series [c,dw,n]
-  * 1510 series [c,dw,n]
-  * 1520 series [c,d,n - Pre 1.11 BIOS (upgrade your BIOS to at least 1.11 to get WMI)]
+  * 1500 series [c,dw,n (x86-64 capable)]
+  * 1510 series [c,dw,n (x86-64 capable)]
+  * 1520 series [c,d,n (x86-64 capable) - Pre 1.11 BIOS (upgrade your BIOS to at least 1.11 to get WMI)]
   * 1640 series [c,d,n]
   * 1650 series [c,dw,n]
   * 1670 series [c,dw,n]
@@ -162,8 +162,8 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 3000 series [c,d,n]
   * 3030 series [u,dw,n]
   * 3500 series [c,d,n]
-  * 5000 series [c,d,n]
-  * 5030 series [c,d,n]
+  * 5000 series [c,d,n (x86-64 capable)]
+  * 5030 series [c,d,n (x86-64 capable)]
   * 5500 series [c,d,n]
   * 5510 series [c,dw,n]
 
@@ -173,7 +173,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 6700 series [c,d,n]
 
 ====Ferrari====
-  * 4000 series [c,d,n]
+  * 4000 series [c,d,n (x86-64 capable)]
 
 ==== Travelmate ====
   * C200 series [c,dw,n - has AMW0 device, but no WMAB method]
