@@ -41,9 +41,7 @@ Unfortunately, the meaning and contents of these registers varies on each model 
 
 = AMW0 Laptops =
 
-Try loading acer_acpi 0.7 with force_series=5020. Then try changing the brightness (you will need to be root to do this) or reading the values of the mail LED and the wireless (on the Aspire 5020, we can ask the EC for the 'true' values of these, rather than the current method on AMW0 of trying to store and guess the current value).
-
-If these don't work, then you will need to look at the registers of the EC on your laptop to find the right ones.
+If any of the values read from wireless, bluetooth or the mail LED are wrong, or the brightness control doesn't work, then you will need to look at the registers of the EC on your laptop to find the right ones.
 
 == Brightness ==
 
@@ -55,7 +53,7 @@ Turn the brightness up to maximum, and look at the EC register values. One of th
 
 On the Aspire 5020, the status of these is all stored in one EC register - 0x0A. To extract a particular one, we can just apply a bitmask.
 
-So, for instance, on the Aspire 5020 and 5040, depending on what we toggle, these values are in EC register 0x0A:
+So, for instance, on the Aspire 5020, depending on what we toggle, these values are in EC register 0x0A:
 
   * Bluetooth Off, Wireless Off, Mail LED off: 0
   * Bluetooth Off, Wireless On, Mail LED off: 4 (bit 4 toggled)
