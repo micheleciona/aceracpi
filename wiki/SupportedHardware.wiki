@@ -103,6 +103,7 @@ as working - if your laptop works and is not on here, please report back.
   * 4010 series [c,d,2]
   * 5010 series [c,d,2]
   * 5220 series [c,d,3]
+  * 5620 series [c,d,3]
 
 ====Ferrari====
   * 1000 series [c,d,2]
