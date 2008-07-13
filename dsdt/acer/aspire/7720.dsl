@@ -1,19 +1,20 @@
 /*
  * Intel ACPI Component Architecture
- * AML Disassembler version 20061109
+ * AML Disassembler version 20080514
  *
- * Disassembly of 7720, Thu Dec 27 17:26:32 2007
+ * Disassembly of 7720, Sun Jul 13 09:47:28 2008
  *
  *
  * Original Table Header:
  *     Signature        "DSDT"
  *     Length           0x000084EA (34026)
- *     Revision         0x01
+ *     Revision         0x01 **** ACPI 1.0, no 64-bit math support
+ *     Checksum         0xE5
  *     OEM ID           "ACRSYS"
  *     OEM Table ID     "ACRPRDCT"
  *     OEM Revision     0x00000001 (1)
- *     Creator ID       "MSFT"
- *     Creator Revision 0x01000013 (16777235)
+ *     Compiler ID      "MSFT"
+ *     Compiler Version 0x01000013 (16777235)
  */
 DefinitionBlock ("7720.aml", "DSDT", 1, "ACRSYS", "ACRPRDCT", 0x00000001)
 {
