@@ -133,6 +133,7 @@ as working - if your laptop works and is not on here, please report back.
   * 6590 series [c,d,2]
   * 7510 series [c,d,3]
   * 7520 series [c,d,3]
+  * 7720 series [c,d,3]
   * 8210 series [c,d,1]
 
 ===Fujitsu Siemens===
