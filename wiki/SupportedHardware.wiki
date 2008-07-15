@@ -216,6 +216,10 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 ====Nobile====
   * 157 [c,d,n]
 
+===Medion===
+====MD====
+  * 95400 [c,d,n]
+
 == Unknown ==
 
 I have no information on these laptops either way - reports from the field (with DSDTs) would be much appreciated. (This list is also _very_ incomplete).
