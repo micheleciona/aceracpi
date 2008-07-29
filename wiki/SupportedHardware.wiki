@@ -98,7 +98,7 @@ as working - if your laptop works and is not on here, please report back.
   * 9300 series [c,d,3]
   * 9420 series [c,d,3]
   * 9810 series [c,d,2]
-  * One series [c,d,2]
+  * One series [c,d,2 - But the WMI implementation on this laptop doesn't actually do anything]
 
 ====Extensa====
   * 4010 series [c,d,2]
