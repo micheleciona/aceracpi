@@ -155,7 +155,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 1350 series [c,d,n]
   * 1360 series [u,d,n - Pre 1.11 BIOS (upgrade your BIOS to at least 1.11 to get WMI)]
   * 1410 series [c,d,n]
-  * 1500 series [c,dw,n (x86-64 capable)]
+  * 1500 series [c,d,n (x86-64 capable)]
   * 1510 series [c,dw,n (x86-64 capable)]
   * 1520 series [c,d,n (x86-64 capable) - Pre 1.11 BIOS (upgrade your BIOS to at least 1.11 to get WMI)]
   * 1640 series [c,d,n]
