@@ -151,6 +151,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 
 ===Acer===
 ====Aspire====
+  * 1300 series [c,d,n]
   * 1310 series [c,d,n]
   * 1350 series [c,d,n]
   * 1360 series [u,d,n - Pre 1.11 BIOS (upgrade your BIOS to at least 1.11 to get WMI)]
