@@ -186,7 +186,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * C200 series [c,dw,n - has AMW0 device, but no WMAB method]
   * C310 series [c,d,n]
   * 220 series [c,d,n]
-  * 290 series [c,dw,n]
+  * 290 series [c,d,n]
   * 350 series [c,dw,n]
   * 380 series [c,d,n]
   * 420 series [c,dw,n]
