@@ -102,6 +102,7 @@ as working - if your laptop works and is not on here, please report back.
 
 ====Extensa====
   * 4010 series [c,d,2]
+  * 4220 series [c,d,3]
   * 5010 series [c,d,2]
   * 5220 series [c,d,3]
   * 5620 series [c,d,3]
