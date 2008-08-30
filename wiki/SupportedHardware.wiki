@@ -91,6 +91,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5720 series [c,d,2]
   * 5680 series [c,d,2,k]
   * 5920 series [c,d,2]
+  * 5930 series [c,d,2]
   * 7110 series [c,d,3]
   * 7520 series [c,d,2]
   * 7720 series [c,d,2]
@@ -229,6 +230,8 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 I have no information on these laptops either way - reports from the field (with DSDTs) would be much appreciated. (This list is also _very_ incomplete).
 
 ===Acer===
+
+====Aspire====
   * 2420 series [u,dw]
   * 3690 series [u,dw]
   * 4310 series [u,dw]
@@ -240,7 +243,6 @@ I have no information on these laptops either way - reports from the field (with
   * 5590 series [u,dw]
   * 5630 series [u,dw]
   * 5910 series [u,dw]
-  * 5920 series [u,dw]
   * 7000 series [u,dw]
   * 7220 series [u,dw]
   * 7520 series [u,dw]
