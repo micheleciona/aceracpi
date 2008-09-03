@@ -91,7 +91,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5720 series [c,d,2]
   * 5680 series [c,d,2,k]
   * 5920 series [c,d,2]
-  * 5930 series [c,d,2]
+  * 5930 series [c,d,3]
   * 7110 series [c,d,3]
   * 7520 series [c,d,2]
   * 7720 series [c,d,2]
@@ -99,7 +99,6 @@ as working - if your laptop works and is not on here, please report back.
   * 9300 series [c,d,3]
   * 9420 series [c,d,3]
   * 9810 series [c,d,2]
-  * One series [c,d,2 - But the WMI implementation on this laptop doesn't actually do anything]
 
 ====Extensa====
   * 4010 series [c,d,2]
@@ -154,6 +153,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 
 ===Acer===
 ====Aspire====
+  * One series [c,d,2 - But the WMI implementation on this laptop doesn't actually do anything]
   * 1300 series [c,d,n]
   * 1310 series [c,d,n]
   * 1350 series [c,d,n]
