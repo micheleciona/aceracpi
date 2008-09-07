@@ -21,7 +21,7 @@ Please upgrade to the latest version of acer_acpi
 
 ==5. dmesg tells me "No or unsupported WMI interface, unable to load"==
 
-Your laptop does not have the WMI-ACPI interface we use to control the hardware. There may be an alternative interface we don't know about - in order to find it, you'll need to do some disassembly of your ACPI DSDT.
+Your laptop does not have the WMI-ACPI interface we use to control the hardware. There may be an alternative interface we don't know about - in order to find it, we'll need to do some disassembly of your ACPI DSDT.
 
 ==6. "acer_acpi: Unknown symbol led_classdev_unregister"==
 
@@ -33,18 +33,18 @@ You need to enable the backlight subsystem in your kernel configuration.
 
 ==8. When is the next version of acer_acpi coming out?==
 
-When It's Ready(TM).
+acer_acpi is now deprecated. So unless there's a major bug fix required, there won't be one.
 
 
 And finally, not a frequently-asked-question ...
 
 ==9. Can I maintain a package for $LINUX_DISTRO?==
 
-Feel free! That's what the GPL is for :-) But I'd appreciate an email, so I know in advance where to direct questions ;-)
+Please don't. acer-wmi is now available in mainline kernels, it would be better to just move to a newer kernel.
 
 ==10. When will acer_acpi go mainline?==
 
-acer-wmi, the upstream port of acer_acpi, was merged into 2.6.25, so the first kernel with this will be 2.6.25-rc1.
+acer-wmi, the upstream port of acer_acpi, was merged into 2.6.25.
 
 ==11. What will happen to acer_acpi now?==
 
