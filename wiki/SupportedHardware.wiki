@@ -185,6 +185,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 6700 series [c,d,n]
 
 ====Ferrari====
+  * 3400 series [c,d,n]
   * 4000 series [c,d,n (x86-64 capable)]
 
 ==== Travelmate ====
