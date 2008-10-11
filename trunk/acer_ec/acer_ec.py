@@ -25,7 +25,8 @@ import string
 import sys
 import time
 
-class IOPorts:
+
+class IOPorts(object):
 
     def __init__(self, file="/dev/port"):
         """Open ports for usage"""
@@ -50,7 +51,7 @@ class IOPorts:
         self._ioports.write(chr(data))
 
 
-class Controller:
+class Controller(object):
 
     def __init__(self, ioports, port1, port2, readcmd=0x80, writecmd=0x81):
         self._ioports = ioports
@@ -131,6 +132,7 @@ class Controller:
 
     def set_register(self, register, value):
         """Set a value for the specified register"""
+        # FIXME - why are we getting value, then using self._value?
         value = self._parse_value(value)
         register = self._parse_value(register)
         self.write(self._value, register)
@@ -175,6 +177,7 @@ def main(argv=None):
     if option in options.keys():
             call = getattr(ec, options[option])
             call(*argv[2:])
+
 
 if __name__ == "__main__":
     sys.exit(main())
