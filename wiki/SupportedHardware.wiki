@@ -174,6 +174,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 3000 series [c,d,n]
   * 3030 series [u,dw,n]
   * 3500 series [c,d,n]
+  * 3630 series [c,d,n]
   * 5000 series [c,d,n (x86-64 capable)]
   * 5030 series [c,d,n (x86-64 capable)]
   * 5500 series [c,d,n]
