@@ -72,6 +72,7 @@ as working - if your laptop works and is not on here, please report back.
   * 4520 series [c,d,2]
   * 4530 series [c,d,2]
   * 4315 series [c,d,3]
+  * 4710 series [c,d,3]
   * 4720 series [c,d,2]
   * 5010 series [c,d,1]
   * 5020 series [c,d,1]
