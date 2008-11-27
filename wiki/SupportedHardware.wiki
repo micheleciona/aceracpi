@@ -116,7 +116,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5000 series [c,d,2]
 
 ==== Travelmate ====
-  * 2410 series [c,dw,1]
+  * 2410 series [c,d,1]
   * 2420 series [c,d,3]
   * 2480 series [c,d,2]
   * 2490 series [c,d,2,k]
