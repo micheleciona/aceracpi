@@ -210,7 +210,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * 3000 series [c,dw,n]
   * 3200 series [c,d,n]
   * 4000 series [c,d,n]
-  * 4020 series [c,dw,n]
+  * 4020 series [c,d,n]
   * 4050 series [c,d,n]
   * 4100 series [c,d,n]
   * 4150 series [c,d,n]
