@@ -230,6 +230,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 
 ===Medion===
 ====MD====
+  * 42200 [c,d,n]
   * 95400 [c,d,n]
 
 == Unknown ==
