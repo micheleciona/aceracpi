@@ -90,6 +90,7 @@ as working - if your laptop works and is not on here, please report back.
   * 5650 series [c,d,2,k]
   * 5670 series [c,d,2]
   * 5710 series [c,d,2]
+  * 5715 series [c,d,2] (Confirmed by DMI)
   * 5720 series [c,d,2]
   * 5680 series [c,d,2,k]
   * 5920 series [c,d,2]
