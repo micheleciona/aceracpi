@@ -69,6 +69,7 @@ as working - if your laptop works and is not on here, please report back.
   * 3610 series [c,d,1]
   * 3620 series [c,d,3]
   * 3680 series [c,d,2]
+  * 3690 series [c,d,2]
   * 4520 series [c,d,2]
   * 4530 series [c,d,2]
   * 4315 series [c,d,3]
@@ -244,7 +245,6 @@ I have no information on these laptops either way - reports from the field (with
 
 ====Aspire====
   * 2420 series [u,dw]
-  * 3690 series [u,dw]
   * 4310 series [u,dw]
   * 4320 series [u,dw]
   * 5110 series [u,dw]
