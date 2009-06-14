@@ -200,6 +200,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
 ==== Travelmate ====
   * C100 series [c,d,n]
   * C200 series [c,dw,n - has AMW0 device, but no WMAB method]
+  * C300 series [c,d,n]
   * C310 series [c,d,n]
   * 220 series [c,d,n]
   * 290 series [c,d,n]
