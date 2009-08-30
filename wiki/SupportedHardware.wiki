@@ -70,6 +70,7 @@ as working - if your laptop works and is not on here, please report back.
   * 3620 series [c,d,3]
   * 3680 series [c,d,2]
   * 3690 series [c,d,2]
+  * 3930 series [c,d,3]
   * 4520 series [c,d,2]
   * 4530 series [c,d,2]
   * 4315 series [c,d,3]
