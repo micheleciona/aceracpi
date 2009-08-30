@@ -50,6 +50,7 @@ Legend:
   * 1 = AMW0 interface
   * 2 = WMID interface
   * 3 = AMW0 v2 interface (AMW0 and WMID)
+  * 4 = WMID v2 interface (new, UNSUPPORTED)
 
 == Supported ==
 
