@@ -204,6 +204,7 @@ This list is _very_ incomplete. The models listed here are the ones known to abs
   * C300 series [c,d,n]
   * C310 series [c,d,n]
   * 220 series [c,d,n]
+  * 240 series [c,d,n]
   * 290 series [c,d,n]
   * 350 series [c,dw,n]
   * 380 series [c,d,n]
