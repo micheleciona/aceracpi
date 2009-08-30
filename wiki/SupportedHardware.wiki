@@ -159,6 +159,18 @@ as working - if your laptop works and is not on here, please report back.
 ====MD====
   * 98300 [c,d,1]
 
+== TODO ==
+
+The following laptops use a new WMI interface (which I've titled 'WMID v2'). This will need to be reverse engineered before these laptops will work with acer-wmi.
+
+===Acer===
+
+====Aspire====
+
+  * 4730 series [c,n,4]
+  * 6390 series [c,n,4]
+
+
 == Unsupported ==
 
 This list is _very_ incomplete. The models listed here are the ones known to absolutely _not_ work with this driver - if you have one of these: it is not, cannot and will not be supported by acer_acpi. (Some of these might be useable with acerhk, or the wireless/ bluetooth switches may be hardware driven instead and not require any software).
