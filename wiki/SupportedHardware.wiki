@@ -30,7 +30,7 @@ acer_acpi is not limited to just Acer laptops - we know at least one Fujitsu Sie
 
 Unfortunately, it is not possible to tell by the hardware alone which laptop series require acer_acpi. The chances are, if you need to install LaunchManager or the Mobility Center add-on in Windows just to turn on your wireless, bluetooth, etc, then you probably need this driver.
 
-If you discover your hardware is supported by acer_acpi and it is not listed here, please send a dump of /sys/firmware/acpi/tables/DSDT (/proc/acpi/dsdt on older kernels) to me (carlos(@)strangeworlds.co.uk), also listing the make and model of your laptop.
+If you discover your hardware is supported by acer_acpi and it is not listed here, please send a dump of /sys/firmware/acpi/tables/DSDT to me (carlos(@)strangeworlds.co.uk), also listing the make and model of your laptop.
 
 If your hardware is not listed on either supported or unsupported, and acer_acpi does not load, please send me the dump of /sys/firmware/acpi/tables/DSDT (/proc/acpi/dsdt on older kernels) and the make and model anyway, as that way we can decide if acer_acpi just needs tweaking to work on your hardware, or so we can definitely rule out your hardware as compatible.
 
